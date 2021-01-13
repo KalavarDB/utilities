@@ -24,19 +24,15 @@ fn main() {
 
     let exe_dir = std::env::current_exe().unwrap().as_os_str().to_str().unwrap().to_string();
 
-    let mut home_dir_vec = exe_dir.split("/").collect::<Vec<&str>>();
+    let mut home_dir_vec = exe_dir.split('/').collect::<Vec<&str>>();
     home_dir_vec.pop();
     let path = format!("{}/security.zip", home_dir_vec.join("/"));
 
     let e = OpenOptions::new().write(true).read(true).create(true).open(path.as_str());
 
     if e.is_err() {
-        match e.unwrap_err().kind() {
-            _ => {
-                println!("\x1b[41mFATAL ERROR\x1b[0m: Unable to update security advisory database");
-                exit(1);
-            }
-        }
+        println!("\x1b[41mFATAL ERROR\x1b[0m: Unable to update security advisory database");
+        exit(1);
     }
 
     let mut db = e.unwrap();
@@ -47,19 +43,18 @@ fn main() {
 
         let repo = zip::read::ZipArchive::new(&mut db);
 
-        if repo.is_ok() {
-            let zipped = repo.unwrap();
+        if let Ok(zipped) = repo {
             let base = "advisory-db-master/crates/";
             let mut advisories = HashMap::<&str, Vec<&str>>::new();
             for file in zipped.file_names() {
                 if file.contains(base) {
                     let hostdir = file.split(base).collect::<Vec<&str>>();
-                    let parts = hostdir[1].split("/").collect::<Vec<&str>>();
+                    let parts = hostdir[1].split('/').collect::<Vec<&str>>();
 
                     let crate_name = parts[0];
                     if parts.len() > 1 {
                         let file = parts[1];
-                        if file != "" {
+                        if !file.is_empty() {
                             if advisories.contains_key(crate_name) {
                                 advisories.get_mut(crate_name).unwrap().push(file);
                             } else {
@@ -79,9 +74,8 @@ fn main() {
             ).unwrap();
             let handle = File::open("./Cargo.toml");
 
-            if handle.is_ok() {
+            if let Ok(mut file) = handle {
                 let (mut utd, mut ood, mut sav) = (0, 0, 0);
-                let mut file = handle.unwrap();
                 let mut buf = Vec::<u8>::new();
                 let _ = file.read_to_end(&mut buf);
                 let content = String::from_utf8(buf).unwrap();
@@ -90,35 +84,40 @@ fn main() {
                 println!("=========================================================================");
                 let mut found_deps = false;
                 for line in content.split(LINE_ENDING) {
-                    if line != "" {
+                    if !line.is_empty() {
                         if line == "[dependencies]" {
                             found_deps = true;
-                        } else if found_deps == true {
-                            if line.contains("{") {
+                        } else if found_deps {
+                            if line.contains('{') {
                                 let components: Vec<&str> = line.split(" = ").collect();
                                 let mut container = components[0].to_string();
 
                                 let pattern = Regex::new(r#"[\d.]+"#).unwrap();
 
                                 let vcore = pattern.captures(line).unwrap().iter().last().unwrap().unwrap().as_str();
-                                let mut pieces = vcore.split(".").collect::<Vec<&str>>();
+                                let mut pieces = vcore.split('.').collect::<Vec<&str>>();
 
-                                if pieces.len() < 3 {
+                                while pieces.len() < 3 {
                                     pieces.push("0");
                                 }
 
                                 let vfull: String = pieces.join(".");
 
-                                let version = Version::parse(vfull.as_str()).unwrap();
+                                let version = match Version::parse(vfull.as_str()) {
+                                    Ok(v) => v,
+                                    Err(e) => {
+                                        println!("Failed to parse {}: {}", line, e);
+                                        exit(1);
+                                    }
+                                };
 
                                 let crate_res: Result<CrateResponse, Error> = client.get_crate(container.as_str());
-                                if crate_res.is_ok() {
-                                    let response = crate_res.unwrap();
+                                if let Ok(response) = crate_res {
                                     let mut rcore = "0.0.0".to_string();
                                     for ver in response.versions {
                                         let mut vnum = ver.num;
 
-                                        let mut rpieces = vnum.split(".").collect::<Vec<&str>>();
+                                        let mut rpieces = vnum.split('.').collect::<Vec<&str>>();
 
                                         if rpieces.len() < 3 {
                                             rpieces.push("0");
@@ -131,7 +130,7 @@ fn main() {
                                             rcore = vnum;
                                         }
                                     }
-                                    let mut rpieces = rcore.split(".").collect::<Vec<&str>>();
+                                    let mut rpieces = rcore.split('.').collect::<Vec<&str>>();
 
                                     if rpieces.len() < 3 {
                                         rpieces.push("0");
@@ -181,24 +180,30 @@ fn main() {
                                 let components: Vec<&str> = line.split(" = ").collect();
                                 let mut container = components[0].to_string();
 
-                                let vcore = components[1].split("\"").collect::<Vec<&str>>();
-                                let mut pieces = vcore[1].split(".").collect::<Vec<&str>>();
+                                let vcore = components[1].split('"').collect::<Vec<&str>>();
+                                let mut pieces = vcore[1].split('.').collect::<Vec<&str>>();
+                                println!("pieces={:?}", pieces);
 
-                                if pieces.len() < 3 {
+                                while pieces.len() < 3 {
                                     pieces.push("0");
                                 }
 
                                 let vfull: String = pieces.join(".");
 
-                                let version = Version::parse(vfull.as_str()).unwrap();
+                                let version = match Version::parse(vfull.as_str()) {
+                                    Ok(v) => v,
+                                    Err(e) => {
+                                        println!("Failed to parse {}: {}", line, e);
+                                        exit(1);
+                                    }
+                                };
                                 let crate_res: Result<CrateResponse, Error> = client.get_crate(container.as_str());
-                                if crate_res.is_ok() {
-                                    let response = crate_res.unwrap();
+                                if let Ok(response) = crate_res {
                                     let mut rcore = "0.0.0".to_string();
                                     for ver in response.versions {
                                         let mut vnum = ver.num;
 
-                                        let mut rpieces = vnum.split(".").collect::<Vec<&str>>();
+                                        let mut rpieces = vnum.split('.').collect::<Vec<&str>>();
 
                                         if rpieces.len() < 3 {
                                             rpieces.push("0");
@@ -211,7 +216,7 @@ fn main() {
                                             rcore = vnum;
                                         }
                                     }
-                                    let mut rpieces = rcore.split(".").collect::<Vec<&str>>();
+                                    let mut rpieces = rcore.split('.').collect::<Vec<&str>>();
 
                                     if rpieces.len() < 3 {
                                         rpieces.push("0");
