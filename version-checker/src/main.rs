@@ -14,10 +14,13 @@ const LINE_ENDING: &str = "\r\n";
 #[cfg(not(windows))]
 const LINE_ENDING: &str = "\n";
 
-mod management;
-mod utilities;
+pub mod management;
+pub mod utilities;
 
 fn main() {
+    let mut test = management::security::SecurityDatabase::new();
+    test.update();
+    exit(1);
     let query = ClientBuilder::new().user_agent("Kalavar Version Utility v1.0 <Thomas B. | tom.b.2k2@gmail.com>").build().unwrap();
 
     let mut dirbytes: Vec<u8> = Vec::new();

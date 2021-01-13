@@ -4,6 +4,7 @@ use std::fs::OpenOptions;
 use std::process::exit;
 use std::io::{Write, Read};
 
+use regex::Regex;
 use reqwest::blocking::{Client, ClientBuilder};
 
 use crate::utilities::errors::Errors;
@@ -39,7 +40,7 @@ impl SecurityDatabase {
             Err(Errors::DBUpdateFailed)
         } else {
             let mut db = e.unwrap();
-
+            let frontmatter_matcher = Regex::new(r#"/```(.*?)```/igm"#).unwrap();
             let write_status = db.write_all(dirbytes.as_slice());
             if write_status.is_ok() {
                 let _ = db.flush();
@@ -47,6 +48,8 @@ impl SecurityDatabase {
                 let repo = zip::read::ZipArchive::new(&mut db);
 
                 if let Ok(mut zipped) = repo {
+                    let mut file_clone = OpenOptions::new().write(true).read(true).create(true).open(path.as_str()).unwrap();
+                    let mut repo_clone = zip::read::ZipArchive::new(&mut file_clone).unwrap();
                     let base = "advisory-db-master/crates/";
                     let paths: Vec<&str> = zipped.file_names().collect::<Vec<&str>>().clone();
                     for path in paths {
@@ -57,8 +60,7 @@ impl SecurityDatabase {
                             if parts.len() > 1 {
                                 let file = parts[1];
                                 if !file.is_empty() {
-
-                                    let advice = zipped.by_name(file);
+                                    let advice = repo_clone.by_name(path);
                                     if advice.is_ok() {
                                         let mut handle = advice.unwrap();
                                         let mut bytes: Vec<u8> = vec!();
