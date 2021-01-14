@@ -170,7 +170,7 @@ impl DisplayLine {
             cells: vec![DisplayCell {
                 text: title.to_string(),
                 width: 0,
-                color: "\x1b[37m".to_string(),
+                color: "\x1b[36m".to_string(),
             }],
         }
     }
@@ -182,22 +182,22 @@ impl DisplayLine {
                 DisplayCell {
                     text: "0".to_string(),
                     width: 11,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: dep.name,
                     width: 50,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: dep.version.to_string(),
                     width: 25,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: dep.remote.to_string(),
                     width: 25,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 }
             ],
         }
@@ -210,22 +210,22 @@ impl DisplayLine {
                 DisplayCell {
                     text: "Advisories".to_string(),
                     width: 11,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: "Dependency".to_string(),
                     width: 50,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: "Version".to_string(),
                     width: 25,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: "Latest".to_string(),
                     width: 25,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 }
             ],
         }
@@ -238,22 +238,22 @@ impl DisplayLine {
                 DisplayCell {
                     text: "Advisories".to_string(),
                     width: 11,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: "Total Dependencies".to_string(),
                     width: 50,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: "Up To Date".to_string(),
                     width: 25,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: "Out Of Date".to_string(),
                     width: 25,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 }
             ],
         }
@@ -266,22 +266,22 @@ impl DisplayLine {
                 DisplayCell {
                     text: format!("{}", advisories),
                     width: 11,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: format!("{}", utd + ood + warn),
                     width: 50,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: format!("{}", utd),
                     width: 25,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
                     text: format!("{}", ood),
                     width: 25,
-                    color: "\x1b[37m".to_string(),
+                    color: "\x1b[36m".to_string(),
                 }
             ],
         }
