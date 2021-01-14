@@ -3,25 +3,38 @@ use std::io::{Read, Write};
 
 use reqwest::blocking::ClientBuilder;
 use regex::Regex;
-use semver::Version;
 use crates_io_api::{CrateResponse, Error};
 use std::process::exit;
 use std::collections::HashMap;
-use crate::utilities::terminal::output::OutputManager;
-
+use crate::utilities::terminal::output::{OutputManager, DisplayLine};
+use crate::management::crates_io::{CratesIOManager, Dependency, Version};
 
 
 pub mod management;
 pub mod utilities;
 
+#[cfg(test)]
+pub mod tests;
+
 fn main() {
-    let mut visual_manager: OutputManager = OutputManager::new(0);
+    let mut visual_manager: OutputManager = OutputManager::new(0, 112);
     let mut test = management::security::SecurityDatabase::new();
-    let mut crate_mgr = management::crates_io::CratesIOManager::new();
     let update_result = test.update();
     if update_result.is_ok() {
-        crate_mgr.fetch_deps();
-        println!("{:#?}", crate_mgr.dependencies)
+        let mut crate_mgr = CratesIOManager::new();
+        visual_manager.render(DisplayLine::new_title("Version Checker Utility  Version 0.1.1"));
+        visual_manager.render(DisplayLine::new_header());
+        visual_manager.render(DisplayLine::new_guide());
+        let fetch_result = crate_mgr.fetch_dependencies("Cargo.toml", &visual_manager);
+        if let Ok((good, bad, insecure, warn)) = fetch_result {
+            visual_manager.render(DisplayLine::new_guide());
+            visual_manager.render(DisplayLine::new_footer());
+            visual_manager.render(DisplayLine::new_guide());
+            visual_manager.render(DisplayLine::new_footer_content(insecure, good, bad, warn));
+            visual_manager.render(DisplayLine::new_table_end());
+        } else {
+
+        }
     } else {
         visual_manager.error(update_result.unwrap_err())
     }
