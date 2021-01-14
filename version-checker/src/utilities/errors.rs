@@ -38,6 +38,15 @@ impl fmt::Display for VerificationError {
     }
 }
 
+
+impl VerificationError {
+    pub fn new(inner: Errors) -> VerificationError {
+        VerificationError {
+            inner
+        }
+    }
+}
+
 pub fn log(e: &VerificationError, f: &mut fmt::Formatter, display_mode: DisplayMode) -> fmt::Result {
     return match display_mode {
         DisplayMode::Debug => {

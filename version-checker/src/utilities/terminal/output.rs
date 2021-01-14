@@ -1,4 +1,6 @@
 use crate::utilities::terminal::output::OutputDisplayMode::{Table, Tree};
+use crate::utilities::errors::{Errors, VerificationError};
+use std::process::exit;
 
 pub struct OutputManager {
     pub display_mode: OutputDisplayMode,
@@ -35,10 +37,13 @@ impl OutputManager {
     pub fn render(&mut self, content: &str) {
         self.lines.push(content.to_string());
 
-        for line in self.lines {
+        for line in &self.lines {
             println!("{}", line)
         }
     }
 
-
+    pub fn error(&self, content: VerificationError) {
+        println!("{:?}", content);
+        exit(1)
+    }
 }
