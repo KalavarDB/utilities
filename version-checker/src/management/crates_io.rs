@@ -227,7 +227,7 @@ impl CratesIOManager {
         }
     }
 
-    pub fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &OutputManager, db: &SecurityDatabase) -> Result<(u16, u16, u16, u16), VerificationError> {
+    pub fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &OutputManager, db: &SecurityDatabase, recursion: usize) -> Result<(u16, u16, u16, u16), VerificationError> {
         let (mut good, mut bad, mut insecure, mut warn) = (0, 0, 0, 0);
         let handle = OpenOptions::new().write(true).read(true).create(false).open(path_to_manifest.as_ref());
         return if let Ok(mut file) = handle {
@@ -239,105 +239,27 @@ impl CratesIOManager {
                 let manifest: Manifest = toml::from_str(content_string.as_str()).unwrap();
 
                 for entry in manifest.dependencies {
-                    let dep: Dependency = process_dependency(self, entry.0, entry.1);
-                    let count = count_advisories(db, dep.name.as_str(), &dep.version);
-                    let mut row = DisplayLine::new_crate(dep.clone(), &count);
-
-                    if !dep.version.is_provided {
-                        warn += 1;
-                        row.cells[0].color = "\x1b[33m".to_string();
-                        row.cells[1].color = "\x1b[33m".to_string();
-                        row.cells[2].color = "\x1b[33m".to_string();
-                        row.cells[3].color = "\x1b[33m".to_string();
-                    }
-
-                    if count > 0 {
-                        insecure += count;
-                        row.cells[0].color = "\x1b[41m".to_string();
-                    }
-
-                    let up_to_date = check_diff(dep.version, dep.remote);
-
-                    if !up_to_date {
-                        bad += 1;
-                        row.cells[1].color = "\x1b[33m".to_string();
-                        row.cells[2].color = "\x1b[31m".to_string();
-                        row.cells[3].color = "\x1b[32m".to_string();
-                    } else {
-                        good += 1;
-                        row.cells[2].color = "\x1b[32m".to_string();
-                        row.cells[3].color = "\x1b[32m".to_string();
-                    }
-
-                    output.render(row);
+                    let (g, b, i, w) = manage_deps(self, entry, db, output);
+                    good += g;
+                    bad += b;
+                    insecure += i;
+                    warn += w;
                 }
 
                 for entry in manifest.dev_dependencies {
-                    let dep: Dependency = process_dependency(self, entry.0, entry.1);
-                    let count = count_advisories(db, dep.name.as_str(), &dep.version);
-                    let mut row = DisplayLine::new_crate(dep.clone(), &count);
-
-                    if !dep.version.is_provided {
-                        warn += 1;
-                        row.cells[0].color = "\x1b[33m".to_string();
-                        row.cells[1].color = "\x1b[33m".to_string();
-                        row.cells[2].color = "\x1b[33m".to_string();
-                        row.cells[3].color = "\x1b[33m".to_string();
-                    }
-
-                    if count > 0 {
-                        insecure += count;
-                        row.cells[0].color = "\x1b[41m".to_string();
-                    }
-
-                    let up_to_date = check_diff(dep.version, dep.remote);
-
-                    if !up_to_date {
-                        bad += 1;
-                        row.cells[1].color = "\x1b[33m".to_string();
-                        row.cells[2].color = "\x1b[31m".to_string();
-                        row.cells[3].color = "\x1b[32m".to_string();
-                    } else {
-                        good += 1;
-                        row.cells[2].color = "\x1b[32m".to_string();
-                        row.cells[3].color = "\x1b[32m".to_string();
-                    }
-
-                    output.render(row);
+                    let (g, b, i, w) = manage_deps(self, entry, db, output);
+                    good += g;
+                    bad += b;
+                    insecure += i;
+                    warn += w;
                 }
 
                 for entry in manifest.build_dependencies {
-                    let dep: Dependency = process_dependency(self, entry.0, entry.1);
-                    let count = count_advisories(db, dep.name.as_str(), &dep.version);
-                    let mut row = DisplayLine::new_crate(dep.clone(), &count);
-
-                    if !dep.version.is_provided {
-                        warn += 1;
-                        row.cells[0].color = "\x1b[33m".to_string();
-                        row.cells[1].color = "\x1b[33m".to_string();
-                        row.cells[2].color = "\x1b[33m".to_string();
-                        row.cells[3].color = "\x1b[33m".to_string();
-                    }
-
-                    if count > 0 {
-                        insecure += count;
-                        row.cells[0].color = "\x1b[41m".to_string();
-                    }
-
-                    let up_to_date = check_diff(dep.version, dep.remote);
-
-                    if !up_to_date {
-                        bad += 1;
-                        row.cells[1].color = "\x1b[33m".to_string();
-                        row.cells[2].color = "\x1b[31m".to_string();
-                        row.cells[3].color = "\x1b[32m".to_string();
-                    } else {
-                        good += 1;
-                        row.cells[2].color = "\x1b[32m".to_string();
-                        row.cells[3].color = "\x1b[32m".to_string();
-                    }
-
-                    output.render(row);
+                    let (g, b, i, w) = manage_deps(self, entry, db, output);
+                    good += g;
+                    bad += b;
+                    insecure += i;
+                    warn += w;
                 }
 
                 Ok((good, bad, insecure, warn))
@@ -473,4 +395,43 @@ fn count_advisories(db: &SecurityDatabase, name: &str, local: &Version) -> u16 {
     } else {
         0
     };
+}
+
+pub fn manage_deps(client: &CratesIOManager, entry: (String, cargo_toml::Dependency), db: &SecurityDatabase, output: &OutputManager) -> (u16, u16, u16, u16) {
+    let (mut good, mut bad, mut insecure, mut warn) = (0, 0, 0, 0);
+    let dep: Dependency = process_dependency(&client, entry.0, entry.1);
+    let count = count_advisories(db, dep.name.as_str(), &dep.version);
+    let mut row = DisplayLine::new_crate(dep.clone(), &count);
+
+    // let crate_deps: Result<Vec<Depen>> = client.client.crate_dependencies(dep.name.as_str(), dep.version.to_string().as_str());
+
+    if !dep.version.is_provided {
+        warn += 1;
+        row.cells[0].color = "\x1b[33m".to_string();
+        row.cells[1].color = "\x1b[33m".to_string();
+        row.cells[2].color = "\x1b[33m".to_string();
+        row.cells[3].color = "\x1b[33m".to_string();
+    }
+
+    if count > 0 {
+        insecure += count;
+        row.cells[0].color = "\x1b[41m".to_string();
+    }
+
+    let up_to_date = check_diff(dep.version, dep.remote);
+
+    if !up_to_date {
+        bad += 1;
+        row.cells[1].color = "\x1b[33m".to_string();
+        row.cells[2].color = "\x1b[31m".to_string();
+        row.cells[3].color = "\x1b[32m".to_string();
+    } else {
+        good += 1;
+        row.cells[2].color = "\x1b[32m".to_string();
+        row.cells[3].color = "\x1b[32m".to_string();
+    }
+
+    output.render(row);
+
+    (good, bad, insecure, warn)
 }
