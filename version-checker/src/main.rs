@@ -27,14 +27,13 @@ fn main() {
             .required(false)
             .help("Disables the \"Update Available\" message until next use")
         )
-        // Temporarily disabled flag, Disabled because it hasn't been implemented
-        // .arg(Arg::with_name("deep")
-        //     .short("d")
-        //     .long("deep")
-        //     .takes_value(false)
-        //     .required(false)
-        //     .help("Checks the dependencies of each of your dependencies, deepens search by 1 level")
-        // )
+        .arg(Arg::with_name("deep")
+            .short("d")
+            .long("deep")
+            .takes_value(false)
+            .required(false)
+            .help("Checks the dependencies of each of your dependencies, deepens search by 1 level")
+        )
         .get_matches();
 
     let mut recursion = 0;

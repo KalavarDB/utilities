@@ -7,7 +7,7 @@ use cargo_toml::Manifest;
 use std::fmt;
 use serde::__private::Formatter;
 use regex::Regex;
-use crate::utilities::terminal::output::{DisplayLine, OutputManager};
+use crate::utilities::terminal::output::{DisplayLine, OutputManager, OutputDisplayType};
 use crate::management::security::SecurityDatabase;
 
 #[derive(Debug, Clone)]
@@ -227,7 +227,7 @@ impl CratesIOManager {
         }
     }
 
-    pub fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &OutputManager, db: &SecurityDatabase, _recursion: usize) -> Result<(u16, u16, u16, u16), VerificationError> {
+    pub fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &OutputManager, db: &SecurityDatabase, recursion: usize) -> Result<(u16, u16, u16, u16), VerificationError> {
         let (mut good, mut bad, mut insecure, mut warn) = (0, 0, 0, 0);
         let handle = OpenOptions::new().write(true).read(true).create(false).open(path_to_manifest.as_ref());
         return if let Ok(mut file) = handle {
@@ -241,7 +241,7 @@ impl CratesIOManager {
                 output.render(DisplayLine::new_header());
                 output.render(DisplayLine::new_guide());
                 for entry in manifest.dependencies {
-                    let (g, b, i, w) = manage_deps(self, entry, db, output);
+                    let (g, b, i, w) = manage_deps(self, entry, db, output, recursion, false, "");
                     good += g;
                     bad += b;
                     insecure += i;
@@ -249,7 +249,7 @@ impl CratesIOManager {
                 }
 
                 for entry in manifest.dev_dependencies {
-                    let (g, b, i, w) = manage_deps(self, entry, db, output);
+                    let (g, b, i, w) = manage_deps(self, entry, db, output, recursion, false, "");
                     good += g;
                     bad += b;
                     insecure += i;
@@ -257,7 +257,7 @@ impl CratesIOManager {
                 }
 
                 for entry in manifest.build_dependencies {
-                    let (g, b, i, w) = manage_deps(self, entry, db, output);
+                    let (g, b, i, w) = manage_deps(self, entry, db, output, recursion, false, "");
                     good += g;
                     bad += b;
                     insecure += i;
@@ -395,13 +395,15 @@ fn count_advisories(db: &SecurityDatabase, name: &str, local: &Version) -> u16 {
     };
 }
 
-pub fn manage_deps(client: &CratesIOManager, entry: (String, cargo_toml::Dependency), db: &SecurityDatabase, output: &OutputManager) -> (u16, u16, u16, u16) {
+pub fn manage_deps(client: &CratesIOManager, entry: (String, cargo_toml::Dependency), db: &SecurityDatabase, output: &OutputManager, recursion: usize, did_recurse: bool, indenter: &str) -> (u16, u16, u16, u16) {
     let (mut good, mut bad, mut insecure, mut warn) = (0, 0, 0, 0);
     let dep: Dependency = process_dependency(&client, entry.0, entry.1);
     let count = count_advisories(db, dep.name.as_str(), &dep.version);
-    let mut row = DisplayLine::new_crate(dep.clone(), &count);
-
-    // let crate_deps: Result<Vec<Depen>> = client.client.crate_dependencies(dep.name.as_str(), dep.version.to_string().as_str());
+    let mut row = if !did_recurse {
+        DisplayLine::new_crate(dep.clone(), &count)
+    } else {
+        DisplayLine::new_crate_dep(dep.clone(), &count, indenter)
+    };
 
     if !dep.version.is_provided {
         warn += 1;
@@ -411,17 +413,12 @@ pub fn manage_deps(client: &CratesIOManager, entry: (String, cargo_toml::Depende
         row.cells[3].color = "\x1b[33m".to_string();
     }
 
-    if count > 0 {
-        insecure += count;
-        row.cells[0].color = "\x1b[41m".to_string();
-    }
-
-    let up_to_date = check_diff(dep.version, dep.remote);
+    let up_to_date = check_diff(dep.version.clone(), dep.remote);
 
     if !up_to_date {
         bad += 1;
         row.cells[1].color = "\x1b[33m".to_string();
-        row.cells[2].color = "\x1b[31m".to_string();
+        row.cells[2].color = "\x1b[33m".to_string();
         row.cells[3].color = "\x1b[32m".to_string();
     } else {
         good += 1;
@@ -429,7 +426,48 @@ pub fn manage_deps(client: &CratesIOManager, entry: (String, cargo_toml::Depende
         row.cells[3].color = "\x1b[32m".to_string();
     }
 
+    if count > 0 {
+        insecure += count;
+        row.cells[0].color = "\x1b[31m".to_string();
+        row.cells[1].color = "\x1b[31m".to_string();
+        row.cells[2].color = "\x1b[31m".to_string();
+
+        if up_to_date {
+            row.cells[3].color = "\x1b[31m".to_string();
+        }
+    }
+
+    if did_recurse && indenter == "┗━" {
+        output.render(row.clone());
+        let text = " ".to_string();
+        row.cells[0].text = text.clone();
+        row.cells[0].color = "\x1b[36m".to_string();
+        row.cells[1].text = text.clone();
+        row.cells[2].text = text.clone();
+        row.cells[3].text = text;
+        row.display_type = OutputDisplayType::Entry;
+    }
+
     output.render(row);
+
+    if recursion > 0 {
+        let crate_deps: Result<Vec<crates_io_api::Dependency>, Error> = client.client.crate_dependencies(dep.name.as_str(), dep.version.to_string().as_str());
+
+        if let Ok(dependencies) = crate_deps {
+            for index in 0..dependencies.len() {
+                let dependency = dependencies[index].clone();
+                let (g, b, i, w) = if index == dependencies.len() - 1 {
+                    manage_deps(client, (dependency.crate_id.clone(), cargo_toml::Dependency::Simple(dependency.req)), db, output, 0, true, "┗━")
+                } else {
+                    manage_deps(client, (dependency.crate_id.clone(), cargo_toml::Dependency::Simple(dependency.req)), db, output, 0, true, "┣━")
+                };
+                good += g;
+                bad += b;
+                insecure += i;
+                warn += w;
+            }
+        }
+    }
 
     (good, bad, insecure, warn)
 }

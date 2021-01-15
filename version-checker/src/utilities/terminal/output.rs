@@ -4,20 +4,24 @@ use std::process::exit;
 use crate::management::crates_io::{Dependency, Version};
 use crate::VERSION;
 
+#[derive(Debug, Clone)]
 pub enum OutputDisplayType {
     Blank,
     Entry,
+    DepEntry,
     Title,
     Header,
     Guide,
     End,
 }
 
+#[derive(Debug, Clone)]
 pub struct DisplayLine {
     pub display_type: OutputDisplayType,
     pub cells: Vec<DisplayCell>,
 }
 
+#[derive(Debug, Clone)]
 pub struct DisplayCell {
     pub text: String,
     pub width: usize,
@@ -110,6 +114,49 @@ impl OutputManager {
                             let mut border = "".to_string();
 
                             while (border.len() + (cell.text.len() + 4)) < cell.width {
+                                border = format!("{} ", border);
+                            }
+
+                            print!("{}{}\x1b[0m{} \x1b[90;1m│\x1b[0m ", cell.color, cell.text, border);
+                        }
+                        2 => {
+                            let mut border = "".to_string();
+
+                            while (border.len() + (cell.text.len() + 4)) < cell.width {
+                                border = format!("{} ", border);
+                            }
+
+                            print!("{}{}\x1b[0m{} \x1b[90;1m│\x1b[0m ", cell.color, cell.text, border);
+                        }
+                        3 => {
+                            let mut border = "".to_string();
+
+                            while (border.len() + (cell.text.len() + 4)) < cell.width {
+                                border = format!("{} ", border);
+                            }
+
+                            print!("{}{}\x1b[0m{} \x1b[90;1m║\x1b[0m ", cell.color, cell.text, border);
+                        }
+                        _ => {}
+                    }
+                    index += 1;
+                }
+                println!()
+            }
+            OutputDisplayType::DepEntry => {
+                let mut index = 0;
+                for mut cell in content.cells {
+                    match index {
+                        0 => {
+                            while cell.text.len() < cell.width {
+                                cell.text = format!(" {}", cell.text);
+                            }
+                            print!(" \x1b[90;1m║\x1b[0m {}{}\x1b[0m \x1b[90;1m│\x1b[0m ", cell.color, cell.text)
+                        }
+                        1 => {
+                            let mut border = "".to_string();
+
+                            while (border.len() + (cell.text.len() + 4)) < cell.width + 4 {
                                 border = format!("{} ", border);
                             }
 
@@ -245,6 +292,34 @@ impl DisplayLine {
                 },
                 DisplayCell {
                     text: dep.name,
+                    width: 50,
+                    color: "\x1b[36m".to_string(),
+                },
+                DisplayCell {
+                    text: dep.version.to_string(),
+                    width: 25,
+                    color: "\x1b[36m".to_string(),
+                },
+                DisplayCell {
+                    text: dep.remote.to_string(),
+                    width: 25,
+                    color: "\x1b[36m".to_string(),
+                }
+            ],
+        }
+    }
+
+    pub fn new_crate_dep(dep: Dependency, advisories: &u16, indenter: &str) -> DisplayLine {
+        DisplayLine {
+            display_type: OutputDisplayType::DepEntry,
+            cells: vec![
+                DisplayCell {
+                    text: format!("{}", advisories),
+                    width: 11,
+                    color: "\x1b[36m".to_string(),
+                },
+                DisplayCell {
+                    text: format!("{} {}", indenter, dep.name),
                     width: 50,
                     color: "\x1b[36m".to_string(),
                 },
