@@ -2,6 +2,7 @@ use crate::utilities::terminal::output::OutputDisplayMode::{Table, Tree};
 use crate::utilities::errors::VerificationError;
 use std::process::exit;
 use crate::management::crates_io::{Dependency, Version};
+use crate::VERSION;
 
 pub enum OutputDisplayType {
     Blank,
@@ -65,7 +66,7 @@ impl OutputManager {
 
         for line in message.split("\n") {
             print!("║");
-            for _ in 0..(25 - line.len()/2) {
+            for _ in 0..(25 - line.len() / 2) {
                 print!(" ");
             }
             if line.contains(" -> ") {
@@ -74,10 +75,10 @@ impl OutputManager {
             } else if line.contains("cargo update") {
                 let halves: Vec<&str> = line.split(" cargo update ").collect();
                 print!("\x1b[35m{}\x1b[33m cargo update \x1b[35m{}\x1b[90;1m", halves[0], halves[1]);
-            }else {
+            } else {
                 print!("\x1b[35m{}\x1b[90;1m", line);
             }
-            for _ in 0..(25 - line.len()/2) {
+            for _ in 0..(25 - line.len() / 2) {
                 print!(" ");
             }
             println!("║");
@@ -139,17 +140,25 @@ impl OutputManager {
                 println!()
             }
             OutputDisplayType::Title => {
-                print!(" \x1b[90;1m╔");
+                let mut line = "".to_string();
+                let _ = line.clone();
+                line = format!("╔");
                 for _ in 0..((self.display_width - (content.cells[0].text.len() + 4)) / 2) - 1 {
-                    print!("═");
+                    line = format!("{}═", line);
                 }
 
-                print!("╡ {} ╞", content.cells[0].text);
+                line = format!("{}╡ {} ╞", line, content.cells[0].text);
 
                 for _ in 0..((self.display_width - (content.cells[0].text.len() + 4)) / 2) - 1 {
-                    print!("═");
+                    line = format!("{}═", line);
                 }
-                println!("╗\x1b[0m");
+
+                if content.cells[0].text.len() % 2 > 0 {
+                    line = format!("{}═", line);
+                }
+
+                line = format!("{}╗", line);
+                println!(" \x1b[90;1m{}\x1b[0m", line);
             }
             OutputDisplayType::Guide => {
                 print!(" \x1b[90;1m╟");
@@ -164,11 +173,26 @@ impl OutputManager {
             }
             OutputDisplayType::Header => {}
             OutputDisplayType::End => {
-                print!(" \x1b[90;1m╚");
-                for _ in 0..self.display_width - 2 {
-                    print!("═");
+                let text = format!("Kalavar Version Checker v{}", VERSION);
+                let mut line = "".to_string();
+                let _ = line.clone();
+                line = format!("╚");
+                for _ in 0..((self.display_width - (text.len() + 4)) / 2) - 1 {
+                    line = format!("{}═", line);
                 }
-                println!("╝\x1b[0m");
+
+                line = format!("{}╡ {} ╞", line, text);
+
+                for _ in 0..((self.display_width - (text.len() + 4)) / 2) - 1 {
+                    line = format!("{}═", line);
+                }
+
+                if text.len() % 2 > 0 {
+                    line = format!("{}═", line);
+                }
+
+                line = format!("{}╝", line);
+                println!(" \x1b[90;1m{}\x1b[0m", line);
             }
         }
     }

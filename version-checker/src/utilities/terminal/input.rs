@@ -15,9 +15,6 @@ pub fn parse_args(manifest: Option<&str>, recursion: usize, updates: bool) {
     let mut advisory_db = SecurityDatabase::new();
     let update_result = advisory_db.update();
     if update_result.is_ok() {
-        visual_manager.render(DisplayLine::new_title("Version Checker Utility  Version 0.1.1"));
-        visual_manager.render(DisplayLine::new_header());
-        visual_manager.render(DisplayLine::new_guide());
         let fetch_result = if let Some(manpath) = manifest {
             crate_mgr.fetch_dependencies(manpath, &visual_manager, &advisory_db, recursion)
         } else {

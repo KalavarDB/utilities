@@ -237,7 +237,9 @@ impl CratesIOManager {
 
             if read_result.is_ok() {
                 let manifest: Manifest = toml::from_str(content_string.as_str()).unwrap();
-
+                output.render(DisplayLine::new_title(format!("Version Report: {}", manifest.package.unwrap().name).as_str()));
+                output.render(DisplayLine::new_header());
+                output.render(DisplayLine::new_guide());
                 for entry in manifest.dependencies {
                     let (g, b, i, w) = manage_deps(self, entry, db, output);
                     good += g;
