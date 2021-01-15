@@ -5,6 +5,7 @@ authors = ["altrius <tom.b.2k2@gmail.com>"]
 edition = "2018"
 description = "A platform agnostic Crates.io version checker, still early stages so dont refrain from suggesting things"
 readme = "README.md"
+license ="MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
