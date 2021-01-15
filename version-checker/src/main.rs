@@ -7,7 +7,7 @@ pub mod utilities;
 pub mod tests;
 
 pub const VERSION: &str = "0.1.13";
-
+#[tokio::main]
 fn main() {
     let matches = App::new("Version Checker")
         .version(VERSION)

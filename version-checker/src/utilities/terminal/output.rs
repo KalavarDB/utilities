@@ -95,7 +95,11 @@ impl OutputManager {
         println!("╝\x1b[0m");
     }
 
-    pub fn render(&self, content: DisplayLine) {
+    pub fn render(content: DisplayLine) {
+
+    }
+
+    pub fn render_line(&self, content: DisplayLine) {
         match content.display_type {
             OutputDisplayType::Blank => {
                 println!();

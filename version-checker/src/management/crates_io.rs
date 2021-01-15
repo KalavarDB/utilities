@@ -9,6 +9,7 @@ use serde::__private::Formatter;
 use regex::Regex;
 use crate::utilities::terminal::output::{DisplayLine, OutputManager, OutputDisplayType};
 use crate::management::security::SecurityDatabase;
+use std::process::Command;
 
 #[derive(Debug, Clone)]
 pub struct Dependency {
@@ -238,37 +239,21 @@ impl CratesIOManager {
             if read_result.is_ok() {
                 let manifest: Manifest = toml::from_str(content_string.as_str()).unwrap();
                 if let Some(package) = manifest.package {
-                    output.render(DisplayLine::new_title(format!("Version Report: {}", package.name).as_str()));
+                    output::render(DisplayLine::new_title(format!("Version Report: {}", package.name).as_str()));
                 } else {
-                    output.render(DisplayLine::new_title("Version Report: Unknown Package"));
+                    output::render(DisplayLine::new_title("Version Report: Unknown Package"));
                 }
-                output.render(DisplayLine::new_header());
-                output.render(DisplayLine::new_guide());
-                for entry in manifest.dependencies {
-                    let (g, b, i, w) = manage_deps(self, entry, db, output, recursion, false, "");
-                    good += g;
-                    bad += b;
-                    insecure += i;
-                    warn += w;
-                }
+                output::render(DisplayLine::new_header());
+                output::render(DisplayLine::new_guide());
 
-                for entry in manifest.dev_dependencies {
-                    let (g, b, i, w) = manage_deps(self, entry, db, output, recursion, false, "");
-                    good += g;
-                    bad += b;
-                    insecure += i;
-                    warn += w;
-                }
+                let tree_result = Command::new("cargo").args(&["tree", "--no-dedupe", "--edges", "all"]).output();
 
-                for entry in manifest.build_dependencies {
-                    let (g, b, i, w) = manage_deps(self, entry, db, output, recursion, false, "");
-                    good += g;
-                    bad += b;
-                    insecure += i;
-                    warn += w;
-                }
+                if let Ok(tree) = tree_result {
 
-                Ok((good, bad, insecure, warn))
+                    Ok((good, bad, insecure, warn))
+                } else {
+                    Err(VerificationError::new(Errors::CrateFileNotFound))
+                }
             } else {
                 Err(VerificationError::new(Errors::CrateFileNotFound))
             }
@@ -442,7 +427,7 @@ pub fn manage_deps(client: &CratesIOManager, entry: (String, cargo_toml::Depende
     }
 
     if did_recurse && indenter == "┗━" {
-        output.render(row.clone());
+        output::render(row.clone());
         let text = " ".to_string();
         row.cells[0].text = text.clone();
         row.cells[0].color = "\x1b[36m".to_string();
@@ -452,7 +437,7 @@ pub fn manage_deps(client: &CratesIOManager, entry: (String, cargo_toml::Depende
         row.display_type = OutputDisplayType::Entry;
     }
 
-    output.render(row);
+    output::render(row);
 
     if recursion > 0 {
         let crate_deps: Result<Vec<crates_io_api::Dependency>, Error> = client.client.crate_dependencies(dep.name.as_str(), dep.version.to_string().as_str());

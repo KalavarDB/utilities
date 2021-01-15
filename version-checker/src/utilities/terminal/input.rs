@@ -1,3 +1,5 @@
+use std::io::Broad
+
 use crate::utilities::terminal::output::{OutputManager, DisplayLine};
 use crate::management::{
     crates_io::CratesIOManager,
@@ -21,11 +23,11 @@ pub fn parse_args(manifest: Option<&str>, recursion: usize, updates: bool) {
             crate_mgr.fetch_dependencies("Cargo.toml", &visual_manager, &advisory_db, recursion)
         };
         if let Ok((good, bad, insecure, warn)) = fetch_result {
-            visual_manager.render(DisplayLine::new_guide());
-            visual_manager.render(DisplayLine::new_footer());
-            visual_manager.render(DisplayLine::new_guide());
-            visual_manager.render(DisplayLine::new_footer_content(good, bad, insecure, warn));
-            visual_manager.render(DisplayLine::new_table_end());
+            visual_manager::render(DisplayLine::new_guide());
+            visual_manager::render(DisplayLine::new_footer());
+            visual_manager::render(DisplayLine::new_guide());
+            visual_manager::render(DisplayLine::new_footer_content(good, bad, insecure, warn));
+            visual_manager::render(DisplayLine::new_table_end());
         } else {}
     } else {
         visual_manager.error(update_result.unwrap_err())
