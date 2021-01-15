@@ -6,7 +6,7 @@ pub mod utilities;
 #[cfg(test)]
 pub mod tests;
 
-pub const VERSION: &str = "0.0.1";
+pub const VERSION: &str = "0.1.1";
 
 fn main() {
     let matches = App::new("Version Checker")
