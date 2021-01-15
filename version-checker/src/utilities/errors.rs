@@ -47,7 +47,7 @@ impl VerificationError {
     }
 }
 
-pub fn log(e: &VerificationError, f: &mut fmt::Formatter, display_mode: DisplayMode) -> fmt::Result {
+pub fn log(_e: &VerificationError, f: &mut fmt::Formatter, display_mode: DisplayMode) -> fmt::Result {
     return match display_mode {
         DisplayMode::Debug => {
             write!(f, "This is a debug displayed error")

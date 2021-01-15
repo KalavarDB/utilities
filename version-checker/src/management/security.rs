@@ -1,15 +1,13 @@
 use std::env::current_exe;
 use std::collections::HashMap;
 use std::fs::OpenOptions;
-use std::process::exit;
 use std::io::{Write, Read};
-use std::borrow::Borrow;
 
 use regex::Regex;
 use reqwest::blocking::{Client, ClientBuilder};
 
 use crate::utilities::errors::{Errors, VerificationError};
-use crate::utilities::serial::security::{Advisory, ParentalAdvisory};
+use crate::utilities::serial::security::ParentalAdvisory;
 
 
 pub struct SecurityDatabase {
@@ -26,7 +24,6 @@ impl SecurityDatabase {
     }
 
     pub fn update(&mut self) -> Result<(), VerificationError> {
-        let (mut passed, mut failed) = (0, 0);
         let mut dirbytes: Vec<u8> = Vec::new();
         let _ = self.client.get("https://github.com/RustSec/advisory-db/archive/master.zip").send().unwrap().read_to_end(&mut dirbytes);
 
@@ -50,7 +47,7 @@ impl SecurityDatabase {
 
                 let repo = zip::read::ZipArchive::new(&mut db);
 
-                if let Ok(mut zipped) = repo {
+                if let Ok(zipped) = repo {
                     let mut file_clone = OpenOptions::new().write(true).read(true).create(true).open(path.as_str()).unwrap();
                     let mut repo_clone = zip::read::ZipArchive::new(&mut file_clone).unwrap();
                     let base = "advisory-db-master";
@@ -59,7 +56,6 @@ impl SecurityDatabase {
                         if path.contains(base) && path.ends_with(".md") {
                             let hostdir = path.split(base).collect::<Vec<&str>>();
                             let parts = hostdir[1].split('/').collect::<Vec<&str>>();
-                            let crate_name = parts[0];
                             if parts.len() > 1 {
                                 let file = parts[1];
                                 if !file.is_empty() {
@@ -92,31 +88,16 @@ impl SecurityDatabase {
                                                         let vector: Vec<ParentalAdvisory> = vec![advisory];
                                                         self.advisories.insert(crate_name, vector);
                                                     }
-                                                    passed += 1;
-                                                } else {
-                                                    failed += 1;
                                                 }
-                                            } else {
-                                                failed += 1;
                                             }
                                         }
                                     } else {
                                         println!("Err: Unable to locate file in zip folder");
                                     }
-                                    // if advisories.contains_key(crate_name) {
-                                    //     advisories.get_mut(crate_name).unwrap().push(file);
-                                    // } else {
-                                    //     advisories.insert(crate_name, vec![file]);
-                                    // }
                                 }
                             }
                         }
-                        // advisories.
                     }
-                    // if failed > 0 {
-                    //     println!("Warning, failed to parse {} security advisories", failed);
-                    // }
-                    // println!("Parsed {} security advisories successfully", passed);
                     Ok(())
                 } else {
                     Err(VerificationError::new(Errors::DBUnreadable))

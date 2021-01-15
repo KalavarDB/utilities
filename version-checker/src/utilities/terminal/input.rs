@@ -5,8 +5,8 @@ use crate::management::{
 };
 
 pub fn parse_args(manifest: Option<&str>, recursion: usize, updates: bool) {
-    let mut visual_manager: OutputManager = OutputManager::new(0, 112);
-    let mut crate_mgr = CratesIOManager::new();
+    let visual_manager: OutputManager = OutputManager::new(0, 112);
+    let crate_mgr = CratesIOManager::new();
 
     if updates {
         crate_mgr.check_self_update(&visual_manager);

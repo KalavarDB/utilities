@@ -3,7 +3,7 @@ use crate::utilities::errors::{VerificationError, Errors};
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::Path;
-use cargo_toml::{Manifest, DependencyDetail};
+use cargo_toml::Manifest;
 use std::fmt;
 use serde::__private::Formatter;
 use regex::Regex;
@@ -227,7 +227,7 @@ impl CratesIOManager {
         }
     }
 
-    pub fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &OutputManager, db: &SecurityDatabase, recursion: usize) -> Result<(u16, u16, u16, u16), VerificationError> {
+    pub fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &OutputManager, db: &SecurityDatabase, _recursion: usize) -> Result<(u16, u16, u16, u16), VerificationError> {
         let (mut good, mut bad, mut insecure, mut warn) = (0, 0, 0, 0);
         let handle = OpenOptions::new().write(true).read(true).create(false).open(path_to_manifest.as_ref());
         return if let Ok(mut file) = handle {
@@ -329,11 +329,7 @@ pub fn process_dependency(client: &CratesIOManager, name: String, dependency: ca
             if let Some(version) = manifest.version {
                 Dependency::new(name.as_str(), version.as_str(), remote_version)
             } else {
-                if let Some(path) = manifest.path {
-                    Dependency::new(name.as_str(), "", remote_version)
-                } else {
-                    Dependency::new(name.as_str(), "", remote_version)
-                }
+                Dependency::new(name.as_str(), "", remote_version)
             }
         }
     }

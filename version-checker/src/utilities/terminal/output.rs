@@ -1,5 +1,5 @@
 use crate::utilities::terminal::output::OutputDisplayMode::{Table, Tree};
-use crate::utilities::errors::{Errors, VerificationError};
+use crate::utilities::errors::VerificationError;
 use std::process::exit;
 use crate::management::crates_io::{Dependency, Version};
 
@@ -58,14 +58,14 @@ impl OutputManager {
     pub fn warn_update(&self, current: Version, latest: Version) {
         let message = format!("A new update is available to install\n{} -> {}\nUse cargo update to install it", current, latest);
         print!("\x1b[90;1m╔");
-        for p in 0..50 {
+        for _ in 0..50 {
             print!("═")
         }
         println!("╗");
 
         for line in message.split("\n") {
             print!("║");
-            for x in 0..(25 - line.len()/2) {
+            for _ in 0..(25 - line.len()/2) {
                 print!(" ");
             }
             if line.contains(" -> ") {
@@ -77,14 +77,14 @@ impl OutputManager {
             }else {
                 print!("\x1b[35m{}\x1b[90;1m", line);
             }
-            for x in 0..(25 - line.len()/2) {
+            for _ in 0..(25 - line.len()/2) {
                 print!(" ");
             }
             println!("║");
         }
 
         print!("╚");
-        for p in 0..50 {
+        for _ in 0..50 {
             print!("═")
         }
         println!("╝\x1b[0m");
