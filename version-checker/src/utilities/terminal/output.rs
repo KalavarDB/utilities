@@ -57,7 +57,7 @@ impl OutputManager {
     }
 
     pub fn warn_update(&self, current: Version, latest: Version) {
-        let message = format!("A new update is available to install\n{} -> {}\nUse cargo update to install it", current, latest);
+        let message = format!("A new update is available to install\n{} -> {}\nUse cargo install version-checker to install it", current, latest);
         print!("\x1b[90;1m╔");
         for _ in 0..50 {
             print!("═")
@@ -72,9 +72,9 @@ impl OutputManager {
             if line.contains(" -> ") {
                 let halves: Vec<&str> = line.split(" -> ").collect();
                 print!("\x1b[31m{}\x1b[35m -> \x1b[32m{}\x1b[90;1m", halves[0], halves[1]);
-            } else if line.contains("cargo update") {
-                let halves: Vec<&str> = line.split(" cargo update ").collect();
-                print!("\x1b[35m{}\x1b[33m cargo update \x1b[35m{}\x1b[90;1m", halves[0], halves[1]);
+            } else if line.contains("cargo install version-checker") {
+                let halves: Vec<&str> = line.split(" cargo install version-checker ").collect();
+                print!("\x1b[35m{}\x1b[33m cargo install version-checker \x1b[35m{}\x1b[90;1m", halves[0], halves[1]);
             } else {
                 print!("\x1b[35m{}\x1b[90;1m", line);
             }
