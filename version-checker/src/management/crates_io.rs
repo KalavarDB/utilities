@@ -8,6 +8,7 @@ use std::fmt;
 use serde::__private::Formatter;
 use regex::Regex;
 use crate::utilities::terminal::output::{DisplayLine, OutputManager};
+use crate::management::security::SecurityDatabase;
 
 #[derive(Debug, Clone)]
 pub struct Dependency {
@@ -167,7 +168,66 @@ impl CratesIOManager {
         }
     }
 
-    pub fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &OutputManager) -> Result<(u16, u16, u16, u16), VerificationError> {
+    pub fn check_self_update(&self, output: &OutputManager) {
+        let remote_result: Result<CrateResponse, Error> = self.client.get_crate("version-checker");
+        if let Ok(remote) = remote_result {
+            let mut remote_version = Version {
+                is_semver: true,
+                is_provided: true,
+                prefixes: None,
+                semver: Some(semver::Version::parse("0.1.2").unwrap()),
+                normal: None,
+            };
+            let mut rcore = "0.0.0".to_string();
+            for ver in remote.versions {
+                let mut vnum = ver.num;
+
+                let mut rpieces = vnum.split('.').collect::<Vec<&str>>();
+
+                if rpieces.len() < 3 {
+                    rpieces.push("0");
+                }
+                vnum = rpieces.join(".");
+                let parsed = semver::Version::parse(vnum.as_str()).unwrap();
+                let core = semver::Version::parse(rcore.as_str()).unwrap();
+
+                if parsed > core {
+                    rcore = vnum;
+                }
+            }
+            let attempted_semver = semver::Version::parse(rcore.as_str());
+
+            if attempted_semver.is_ok() && rcore != "0.0.0".to_string() {
+                remote_version = Version {
+                    is_semver: true,
+                    is_provided: true,
+                    prefixes: None,
+                    semver: Some(attempted_semver.unwrap()),
+                    normal: None,
+                }
+            } else if rcore != "0.0.0".to_string() {
+                remote_version = Version {
+                    is_semver: false,
+                    is_provided: true,
+                    prefixes: None,
+                    semver: None,
+                    normal: Some(rcore),
+                }
+            }
+
+
+            let self_dep = Dependency::new("Self", crate::VERSION, remote_version);
+
+            if self_dep.version.is_semver && self_dep.remote.is_semver {
+                if self_dep.version.semver.clone().unwrap() < self_dep.remote.semver.clone().unwrap() {
+                    output.warn_update(self_dep.version, self_dep.remote);
+                    println!();
+                }
+            }
+        }
+    }
+
+    pub fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &OutputManager, db: &SecurityDatabase) -> Result<(u16, u16, u16, u16), VerificationError> {
         let (mut good, mut bad, mut insecure, mut warn) = (0, 0, 0, 0);
         let handle = OpenOptions::new().write(true).read(true).create(false).open(path_to_manifest.as_ref());
         return if let Ok(mut file) = handle {
@@ -180,8 +240,8 @@ impl CratesIOManager {
 
                 for entry in manifest.dependencies {
                     let dep: Dependency = process_dependency(self, entry.0, entry.1);
-
-                    let mut row = DisplayLine::new_crate(dep.clone());
+                    let count = count_advisories(db, dep.name.as_str(), &dep.version);
+                    let mut row = DisplayLine::new_crate(dep.clone(), &count);
 
                     if !dep.version.is_provided {
                         warn += 1;
@@ -189,6 +249,24 @@ impl CratesIOManager {
                         row.cells[1].color = "\x1b[33m".to_string();
                         row.cells[2].color = "\x1b[33m".to_string();
                         row.cells[3].color = "\x1b[33m".to_string();
+                    }
+
+                    if count > 0 {
+                        insecure += count;
+                        row.cells[0].color = "\x1b[41m".to_string();
+                    }
+
+                    let up_to_date = check_diff(dep.version, dep.remote);
+
+                    if !up_to_date {
+                        bad += 1;
+                        row.cells[1].color = "\x1b[33m".to_string();
+                        row.cells[2].color = "\x1b[31m".to_string();
+                        row.cells[3].color = "\x1b[32m".to_string();
+                    } else {
+                        good += 1;
+                        row.cells[2].color = "\x1b[32m".to_string();
+                        row.cells[3].color = "\x1b[32m".to_string();
                     }
 
                     output.render(row);
@@ -196,8 +274,8 @@ impl CratesIOManager {
 
                 for entry in manifest.dev_dependencies {
                     let dep: Dependency = process_dependency(self, entry.0, entry.1);
-
-                    let mut row = DisplayLine::new_crate(dep.clone());
+                    let count = count_advisories(db, dep.name.as_str(), &dep.version);
+                    let mut row = DisplayLine::new_crate(dep.clone(), &count);
 
                     if !dep.version.is_provided {
                         warn += 1;
@@ -207,13 +285,31 @@ impl CratesIOManager {
                         row.cells[3].color = "\x1b[33m".to_string();
                     }
 
+                    if count > 0 {
+                        insecure += count;
+                        row.cells[0].color = "\x1b[41m".to_string();
+                    }
+
+                    let up_to_date = check_diff(dep.version, dep.remote);
+
+                    if !up_to_date {
+                        bad += 1;
+                        row.cells[1].color = "\x1b[33m".to_string();
+                        row.cells[2].color = "\x1b[31m".to_string();
+                        row.cells[3].color = "\x1b[32m".to_string();
+                    } else {
+                        good += 1;
+                        row.cells[2].color = "\x1b[32m".to_string();
+                        row.cells[3].color = "\x1b[32m".to_string();
+                    }
+
                     output.render(row);
                 }
 
                 for entry in manifest.build_dependencies {
                     let dep: Dependency = process_dependency(self, entry.0, entry.1);
-
-                    let mut row = DisplayLine::new_crate(dep.clone());
+                    let count = count_advisories(db, dep.name.as_str(), &dep.version);
+                    let mut row = DisplayLine::new_crate(dep.clone(), &count);
 
                     if !dep.version.is_provided {
                         warn += 1;
@@ -221,6 +317,24 @@ impl CratesIOManager {
                         row.cells[1].color = "\x1b[33m".to_string();
                         row.cells[2].color = "\x1b[33m".to_string();
                         row.cells[3].color = "\x1b[33m".to_string();
+                    }
+
+                    if count > 0 {
+                        insecure += count;
+                        row.cells[0].color = "\x1b[41m".to_string();
+                    }
+
+                    let up_to_date = check_diff(dep.version, dep.remote);
+
+                    if !up_to_date {
+                        bad += 1;
+                        row.cells[1].color = "\x1b[33m".to_string();
+                        row.cells[2].color = "\x1b[31m".to_string();
+                        row.cells[3].color = "\x1b[32m".to_string();
+                    } else {
+                        good += 1;
+                        row.cells[2].color = "\x1b[32m".to_string();
+                        row.cells[3].color = "\x1b[32m".to_string();
                     }
 
                     output.render(row);
@@ -304,5 +418,59 @@ pub fn process_dependency(client: &CratesIOManager, name: String, dependency: ca
 }
 
 fn check_diff(local: Version, remote: Version) -> bool {
-    false
+    return if local.is_semver && remote.is_semver {
+        local.semver.clone().unwrap() == remote.semver.clone().unwrap()
+    } else {
+        false
+    };
+}
+
+fn count_advisories(db: &SecurityDatabase, name: &str, local: &Version) -> u16 {
+    return if db.advisories.contains_key(name) {
+        let advisories = db.advisories.get(name).unwrap();
+        let mut applicable = 0;
+        for case in advisories {
+            if let Some(patch_info) = case.clone().versions {
+                if let Some(patched_in) = patch_info.patched {
+                    for version in patched_in {
+                        let prefixes = Regex::new(r#"[><=^*~ ]"#).unwrap();
+                        let mut ver = "".to_string();
+
+                        if prefixes.is_match(version.as_str()) {
+                            let chars: Vec<&str> = version.split("").collect();
+
+                            for character in chars {
+                                if !prefixes.is_match(character) && character != " " {
+                                    ver = format!("{}{}", ver, character);
+                                }
+                            }
+                        } else {
+                            let pieces: Vec<&str> = version.split(" ").collect();
+                            ver = pieces.join("");
+                        }
+                        let parse_attempt = semver::Version::parse(ver.as_str());
+
+                        if let Ok(parsed) = parse_attempt {
+                            if local.is_semver {
+                                if parsed > local.semver.clone().unwrap() {
+                                    applicable += 1;
+                                }
+                            } else {
+                                applicable += 1;
+                            }
+                        } else {
+                            applicable += 1;
+                        }
+                    }
+                } else {
+                    applicable += 1;
+                }
+            } else {
+                applicable += 1;
+            }
+        }
+        applicable
+    } else {
+        0
+    };
 }

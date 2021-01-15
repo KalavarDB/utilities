@@ -113,10 +113,10 @@ impl SecurityDatabase {
                         }
                         // advisories.
                     }
-                    if failed > 0 {
-                        println!("Warning, failed to parse {} security advisories", failed);
-                    }
-                    println!("Parsed {} security advisories successfully", passed);
+                    // if failed > 0 {
+                    //     println!("Warning, failed to parse {} security advisories", failed);
+                    // }
+                    // println!("Parsed {} security advisories successfully", passed);
                     Ok(())
                 } else {
                     Err(VerificationError::new(Errors::DBUnreadable))
