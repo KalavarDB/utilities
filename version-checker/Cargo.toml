@@ -1,9 +1,9 @@
 [package]
 name = "version-checker"
-version = "0.1.12"
+version = "0.1.13"
 authors = ["altrius <tom.b.2k2@gmail.com>"]
 edition = "2018"
-description = "A platform agnostic Crates.io version checker, still early stages so dont refrain from suggesting things"
+description = "A clean, easy to use version checker built to help you track problems with your dependencies"
 readme = "README.md"
 license ="MIT"
 
