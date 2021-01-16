@@ -1,6 +1,6 @@
 [package]
 name = "version-checker"
-version = "0.1.13"
+version = "0.2.0"
 authors = ["altrius <tom.b.2k2@gmail.com>"]
 edition = "2018"
 description = "A clean, easy to use version checker built to help you track problems with your dependencies"
