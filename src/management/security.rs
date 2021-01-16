@@ -24,7 +24,7 @@ impl SecurityDatabase {
     }
 
     pub async fn update(&mut self) -> Result<(), VerificationError> {
-        let mut dirbytes: Vec<u8> = self.client.get("https://github.com/RustSec/advisory-db/archive/master.zip").send().await.unwrap().bytes().await.unwrap().as_ref().to_vec();
+        let dirbytes: Vec<u8> = self.client.get("https://github.com/RustSec/advisory-db/archive/master.zip").send().await.unwrap().bytes().await.unwrap().as_ref().to_vec();
 
         let exe_dir = current_exe().unwrap().as_os_str().to_str().unwrap().to_string();
 

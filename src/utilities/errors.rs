@@ -23,7 +23,7 @@ pub enum Errors {
     /// # Errors for parsing
     // Unable to parse version
     VersionUnacceptable,
-    CrateParseFailed
+    CrateParseFailed,
 }
 
 pub enum DisplayMode {
@@ -56,13 +56,57 @@ impl VerificationError {
     }
 }
 
-pub fn log(_e: &VerificationError, f: &mut fmt::Formatter, display_mode: DisplayMode) -> fmt::Result {
+pub fn log(e: &VerificationError, f: &mut fmt::Formatter, display_mode: DisplayMode) -> fmt::Result {
     return match display_mode {
         DisplayMode::Debug => {
-            write!(f, "This is a debug displayed error")
+            match e.inner {
+                Errors::DBUpdateFailed => {
+                    write!(f, "Failed to update the advisory database")
+                }
+                Errors::DBUnreadable => {
+                    write!(f, "Failed to read the advisory database")
+                }
+                Errors::DBNotWriteable => {
+                    write!(f, "Failed to write the advisory database")
+                }
+                Errors::CrateFileNotFound => {
+                    write!(f, "Failed to locate package manifest (Cargo.toml)")
+                }
+                Errors::CrateNotAvailable => {
+                    write!(f, "Unable to fetch from Crates.io")
+                }
+                Errors::VersionUnacceptable => {
+                    write!(f, "Failed to parse the supplied version number")
+                }
+                Errors::CrateParseFailed => {
+                    write!(f, "Failed to parse crate")
+                }
+            }
         }
         DisplayMode::User => {
-            write!(f, "This is a user displayed error")
+            match e.inner {
+                Errors::DBUpdateFailed => {
+                    write!(f, "Failed to update the advisory database")
+                }
+                Errors::DBUnreadable => {
+                    write!(f, "Failed to read the advisory database")
+                }
+                Errors::DBNotWriteable => {
+                    write!(f, "Failed to write the advisory database")
+                }
+                Errors::CrateFileNotFound => {
+                    write!(f, "Failed to locate package manifest (Cargo.toml)")
+                }
+                Errors::CrateNotAvailable => {
+                    write!(f, "Unable to fetch from Crates.io")
+                }
+                Errors::VersionUnacceptable => {
+                    write!(f, "Failed to parse the supplied version number")
+                }
+                Errors::CrateParseFailed => {
+                    write!(f, "Failed to parse crate")
+                }
+            }
         }
     };
 }

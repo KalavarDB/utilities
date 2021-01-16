@@ -7,7 +7,7 @@ use crate::utilities::errors::{VerificationError, Errors};
 pub struct CrateResponse {
     #[serde(rename = "crate")]
     pub package: PreCrate,
-    pub version: Vec<PreVersion>,
+    pub versions: Vec<PreVersion>,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -52,11 +52,12 @@ impl CrateResponse {
             if let Ok(max) = max_parse {
                 if let Ok(max_stable) = max_stable_parse {
                     Ok(Crate {
+                        crate_type: CrateType::CratesIO,
                         name: self.package.name,
-                        version: localver,
+                        version: Some(localver),
                         dependencies: vec![],
-                        latest: max,
-                        latest_stable: max_stable,
+                        latest: Some(max),
+                        latest_stable: Some(max_stable),
                     })
                 } else {
                     Err(VerificationError::new(Errors::VersionUnacceptable))

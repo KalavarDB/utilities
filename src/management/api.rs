@@ -1,4 +1,3 @@
-use serde_json;
 use crate::utilities::serial::api::*;
 use reqwest::{Client, ClientBuilder};
 use crate::utilities::errors::{VerificationError, Errors};
@@ -22,6 +21,7 @@ impl ApiManager {
             if let Ok(crate_resp) = parse_attempt {
                 crate_resp.into_crate(version)
             } else {
+                println!("{}", parse_attempt.unwrap_err());
                 Err(VerificationError::new(Errors::CrateParseFailed))
             }
         } else {

@@ -65,7 +65,7 @@ impl OutputManager {
         let remote_result: Result<Crate, VerificationError> = (ApiManager::new()).get_crate("version-checker", VERSION).await;
         if let Ok(version_checker) = remote_result {
             if version_checker.is_current() || version_checker.is_current_unstable() {
-                let message = format!("A new update is available to install\n{} -> {}\nUse cargo install version-checker to install it", version_checker.version, version_checker.latest_stable);
+                let message = format!("A new update is available to install\n{} -> {}\nUse cargo install version-checker to install it", version_checker.version.unwrap(), version_checker.latest_stable.unwrap());
                 print!(" \x1b[90;1m╔");
                 for _ in 0..50 {
                     print!("═")
@@ -289,7 +289,7 @@ impl DisplayLine {
         }
     }
 
-    pub fn new_crate(dep: Crate, advisories: &u16) -> DisplayLine {
+    pub fn new_crate(name: String, local: String, remote: String, advisories: u16) -> DisplayLine {
         DisplayLine {
             display_type: OutputDisplayType::Entry,
             cells: vec![
@@ -299,17 +299,17 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: dep.name,
+                    text: name,
                     width: 50,
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: dep.version.to_string(),
+                    text: local,
                     width: 25,
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: dep.latest_stable.to_string(),
+                    text: remote,
                     width: 25,
                     color: "\x1b[36m".to_string(),
                 }
@@ -317,7 +317,7 @@ impl DisplayLine {
         }
     }
 
-    pub fn new_crate_dep(dep: Crate, advisories: &u16, indenter: &str) -> DisplayLine {
+    pub fn new_crate_dep(name: String, local: String, remote: String, advisories: u16, indenter: &str) -> DisplayLine {
         DisplayLine {
             display_type: OutputDisplayType::DepEntry,
             cells: vec![
@@ -327,17 +327,17 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: format!("{} {}", indenter, dep.name),
+                    text: format!("{} {}", indenter, name),
                     width: 50,
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: dep.version.to_string(),
+                    text: local,
                     width: 25,
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: dep.latest_stable.to_string(),
+                    text: remote,
                     width: 25,
                     color: "\x1b[36m".to_string(),
                 }
