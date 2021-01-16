@@ -1,8 +1,9 @@
 use crate::utilities::terminal::output::OutputDisplayMode::{Table, Tree};
 use crate::utilities::errors::VerificationError;
 use std::process::exit;
-use crate::management::versions::{Dependency, Version};
 use crate::VERSION;
+use crate::utilities::serial::api::Crate;
+use crate::management::api::ApiManager;
 
 #[derive(Debug, Clone)]
 pub enum OutputDisplayType {
@@ -60,46 +61,49 @@ impl OutputManager {
         man
     }
 
-    pub fn warn_update(&self, current: Version, latest: Version) {
-        let message = format!("A new update is available to install\n{} -> {}\nUse cargo install version-checker to install it", current, latest);
-        print!("\x1b[90;1m╔");
-        for _ in 0..50 {
-            print!("═")
-        }
-        println!("╗");
+    pub async fn check_update(&self) {
+        let remote_result: Result<Crate, VerificationError> = (ApiManager::new()).get_crate("version-checker", VERSION).await;
+        if let Ok(version_checker) = remote_result {
+            if version_checker.is_current() || version_checker.is_current_unstable() {
+                let message = format!("A new update is available to install\n{} -> {}\nUse cargo install version-checker to install it", version_checker.version, version_checker.latest_stable);
+                print!(" \x1b[90;1m╔");
+                for _ in 0..50 {
+                    print!("═")
+                }
+                println!("╗");
 
-        for line in message.split("\n") {
-            print!("║");
-            for _ in 0..(25 - line.len() / 2) {
-                print!(" ");
-            }
-            if line.contains(" -> ") {
-                let halves: Vec<&str> = line.split(" -> ").collect();
-                print!("\x1b[31m{}\x1b[35m -> \x1b[32m{}\x1b[90;1m", halves[0], halves[1]);
-            } else if line.contains("cargo install version-checker") {
-                let halves: Vec<&str> = line.split(" cargo install version-checker ").collect();
-                print!("\x1b[35m{}\x1b[33m cargo install version-checker \x1b[35m{}\x1b[90;1m", halves[0], halves[1]);
-            } else {
-                print!("\x1b[35m{}\x1b[90;1m", line);
-            }
-            for _ in 0..(25 - line.len() / 2) {
-                print!(" ");
-            }
-            println!("║");
-        }
+                for line in message.split("\n") {
+                    print!(" ║");
+                    for _ in 0..(25 - line.len() / 2) {
+                        print!(" ");
+                    }
+                    if line.contains(" -> ") {
+                        let halves: Vec<&str> = line.split(" -> ").collect();
+                        print!("\x1b[31m{}\x1b[35m -> \x1b[32m{}\x1b[90;1m", halves[0], halves[1]);
+                    } else if line.contains("cargo install version-checker") {
+                        let halves: Vec<&str> = line.split(" cargo install version-checker ").collect();
+                        print!("\x1b[35m{}\x1b[33m cargo install version-checker \x1b[35m{}\x1b[90;1m", halves[0], halves[1]);
+                    } else {
+                        print!("\x1b[35m{}\x1b[90;1m", line);
+                    }
+                    for _ in 0..(25 - line.len() / 2) {
+                        print!(" ");
+                    }
+                    println!("║");
+                }
 
-        print!("╚");
-        for _ in 0..50 {
-            print!("═")
+                print!(" ╚");
+                for _ in 0..50 {
+                    print!("═")
+                }
+                println!("╝\x1b[0m");
+                println!();
+            }
         }
-        println!("╝\x1b[0m");
     }
 
-    pub fn render(content: DisplayLine) {
 
-    }
-
-    pub fn render_line(&self, content: DisplayLine) {
+    pub fn render(&self, content: DisplayLine) {
         match content.display_type {
             OutputDisplayType::Blank => {
                 println!();
@@ -252,7 +256,7 @@ impl OutputManager {
         println!("{:?}", content);
     }
 
-    pub fn error(&self, content: VerificationError) {
+    pub fn error(content: VerificationError) {
         println!("{:?}", content);
         exit(1)
     }
@@ -285,7 +289,7 @@ impl DisplayLine {
         }
     }
 
-    pub fn new_crate(dep: Dependency, advisories: &u16) -> DisplayLine {
+    pub fn new_crate(dep: Crate, advisories: &u16) -> DisplayLine {
         DisplayLine {
             display_type: OutputDisplayType::Entry,
             cells: vec![
@@ -305,7 +309,7 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: dep.remote.to_string(),
+                    text: dep.latest_stable.to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
                 }
@@ -313,7 +317,7 @@ impl DisplayLine {
         }
     }
 
-    pub fn new_crate_dep(dep: Dependency, advisories: &u16, indenter: &str) -> DisplayLine {
+    pub fn new_crate_dep(dep: Crate, advisories: &u16, indenter: &str) -> DisplayLine {
         DisplayLine {
             display_type: OutputDisplayType::DepEntry,
             cells: vec![
@@ -333,7 +337,7 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: dep.remote.to_string(),
+                    text: dep.latest_stable.to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
                 }

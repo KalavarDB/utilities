@@ -43,7 +43,7 @@ pub struct PreDependency {
 }
 
 impl CrateResponse {
-    pub fn into_crate(self, local: &str) -> Crate {
+    pub fn into_crate(self, local: &str) -> Result<Crate, VerificationError> {
         let local_ver_parse = VersionReq::parse_compat(local, Compat::Cargo);
         let max_parse = VersionReq::parse_compat(self.package.max_version.as_str(), Compat::Cargo);
         let max_stable_parse = VersionReq::parse_compat(self.package.max_stable_version.as_str(), Compat::Cargo);
@@ -51,13 +51,13 @@ impl CrateResponse {
         return if let Ok(localver) = local_ver_parse {
             if let Ok(max) = max_parse {
                 if let Ok(max_stable) = max_stable_parse {
-                    Crate {
+                    Ok(Crate {
                         name: self.package.name,
                         version: localver,
                         dependencies: vec![],
                         latest: max,
                         latest_stable: max_stable,
-                    }
+                    })
                 } else {
                     Err(VerificationError::new(Errors::VersionUnacceptable))
                 }

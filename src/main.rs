@@ -7,7 +7,7 @@ pub mod utilities;
 #[cfg(test)]
 pub mod tests;
 
-pub const VERSION: &str = "0.1.13";
+pub const VERSION: &str = "0.1.12";
 #[tokio::main]
 async fn main() {
     let matches = App::new("Version Checker")
@@ -50,5 +50,5 @@ async fn main() {
 
     let manifest = matches.value_of("manifest");
 
-    utilities::terminal::input::parse_args(manifest, recursion, updates)
+    utilities::terminal::input::parse_args(manifest, recursion, updates).await;
 }

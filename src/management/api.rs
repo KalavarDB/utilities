@@ -16,11 +16,11 @@ impl ApiManager {
     }
 
     pub async fn get_crate(&self, name: &str, version: &str) -> Result<Crate, VerificationError> {
-        let response = self.client.get(format!("https://crates.io/api/v1/crates/{}", name)).send().await;
+        let response = self.client.get(format!("https://crates.io/api/v1/crates/{}", name).as_str()).send().await;
         return if let Ok(resp_inner) = response {
             let parse_attempt: reqwest::Result<CrateResponse> = resp_inner.json().await;
             if let Ok(crate_resp) = parse_attempt {
-                Ok(crate_resp.into_crate(version))
+                crate_resp.into_crate(version)
             } else {
                 Err(VerificationError::new(Errors::CrateParseFailed))
             }
