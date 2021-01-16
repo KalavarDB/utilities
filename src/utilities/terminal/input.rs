@@ -31,7 +31,7 @@ pub async fn parse_args(manifest: Option<&str>, recursion: usize, updates: bool)
         let fetch_result = if let Some(manpath) = manifest {
             version_mgr.fetch_dependencies(manpath, &mut sender, &advisory_db, recursion).await
         } else {
-            version_mgr.fetch_dependencies("Cargo.toml", &mut sender, &advisory_db, recursion).await
+            version_mgr.fetch_dependencies("./Cargo.toml", &mut sender, &advisory_db, recursion).await
         };
         if let Ok((good, bad, insecure, warn)) = fetch_result {
             sender.send(DisplayLine::new_guide()).await;

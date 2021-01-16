@@ -34,6 +34,13 @@ async fn main() {
             .required(false)
             .help("Checks the dependencies of each of your dependencies, deepens search by 1 level")
         )
+        .arg(Arg::with_name("transient")
+            .short("t")
+            .long("transient")
+            .takes_value(false)
+            .required(false)
+            .help("Checks all dependencies right down to the roots of the tree")
+        )
         .get_matches();
 
     let mut recursion = 0;
@@ -41,6 +48,10 @@ async fn main() {
 
     if matches.is_present("deep") {
         recursion = 1;
+    }
+
+    if matches.is_present("transient") {
+        recursion = 2;
     }
 
     if matches.is_present("no-update") {

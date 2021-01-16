@@ -2,7 +2,7 @@ use crate::utilities::terminal::output::OutputDisplayMode::{Table, Tree};
 use crate::utilities::errors::VerificationError;
 use std::process::exit;
 use crate::VERSION;
-use crate::utilities::serial::api::Crate;
+use crate::utilities::serial::api::{Crate, filter_wildcards};
 use crate::management::api::ApiManager;
 
 #[derive(Debug, Clone)]
@@ -65,7 +65,7 @@ impl OutputManager {
         let remote_result: Result<Crate, VerificationError> = (ApiManager::new()).get_crate("version-checker", VERSION).await;
         if let Ok(version_checker) = remote_result {
             if version_checker.is_current() || version_checker.is_current_unstable() {
-                let message = format!("A new update is available to install\n{} -> {}\nUse cargo install version-checker to install it", version_checker.version.unwrap(), version_checker.latest_stable.unwrap());
+                let message = format!("A new update is available to install\n{} -> {}\nUse cargo install version-checker to install", filter_wildcards(version_checker.version.unwrap()), filter_wildcards(version_checker.latest_stable.unwrap()));
                 print!(" \x1b[90;1m╔");
                 for _ in 0..50 {
                     print!("═")
@@ -304,14 +304,14 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: local,
+                    text: filter_wildcards(local).to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: remote,
+                    text: filter_wildcards(remote).to_string(),
                     width: 25,
-                    color: "\x1b[36m".to_string(),
+                    color: "\x1b[32m".to_string(),
                 }
             ],
         }
@@ -332,14 +332,14 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: local,
+                    text: filter_wildcards(local).to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: remote,
+                    text: filter_wildcards(remote).to_string(),
                     width: 25,
-                    color: "\x1b[36m".to_string(),
+                    color: "\x1b[32m".to_string(),
                 }
             ],
         }
