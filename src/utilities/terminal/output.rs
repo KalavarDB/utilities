@@ -164,7 +164,7 @@ impl OutputManager {
                         3 => {
                             let mut border = "".to_string();
 
-                            while (border.len() + (cell.text.len() + 4)) < cell.width + 4 {
+                            while (border.len() + (cell.text.len() + 4)) < cell.width + 6 {
                                 border = format!("{} ", border);
                             }
 
