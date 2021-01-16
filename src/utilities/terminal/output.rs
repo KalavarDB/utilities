@@ -118,14 +118,14 @@ impl OutputManager {
                             }
                             print!(" \x1b[90;1m║\x1b[0m {}{}\x1b[0m \x1b[90;1m│\x1b[0m ", cell.color, cell.text)
                         }
-                        1 => {
+                        3 => {
                             let mut border = "".to_string();
 
                             while (border.len() + (cell.text.len() + 4)) < cell.width {
                                 border = format!("{} ", border);
                             }
 
-                            print!("{}{}\x1b[0m{} \x1b[90;1m│\x1b[0m ", cell.color, cell.text, border);
+                            print!("{}{}\x1b[0m{} \x1b[90;1m║\x1b[0m ", cell.color, cell.text, border);
                         }
                         2 => {
                             let mut border = "".to_string();
@@ -136,14 +136,14 @@ impl OutputManager {
 
                             print!("{}{}\x1b[0m{} \x1b[90;1m│\x1b[0m ", cell.color, cell.text, border);
                         }
-                        3 => {
+                        1 => {
                             let mut border = "".to_string();
 
                             while (border.len() + (cell.text.len() + 4)) < cell.width {
                                 border = format!("{} ", border);
                             }
 
-                            print!("{}{}\x1b[0m{} \x1b[90;1m║\x1b[0m ", cell.color, cell.text, border);
+                            print!("{}{}\x1b[0m{} \x1b[90;1m│\x1b[0m ", cell.color, cell.text, border);
                         }
                         _ => {}
                     }
@@ -161,14 +161,14 @@ impl OutputManager {
                             }
                             print!(" \x1b[90;1m║\x1b[0m {}{}\x1b[0m \x1b[90;1m│\x1b[0m ", cell.color, cell.text)
                         }
-                        1 => {
+                        3 => {
                             let mut border = "".to_string();
 
                             while (border.len() + (cell.text.len() + 4)) < cell.width + 4 {
                                 border = format!("{} ", border);
                             }
 
-                            print!("{}{}\x1b[0m{} \x1b[90;1m│\x1b[0m ", cell.color, cell.text, border);
+                            print!("{}{}\x1b[0m{} \x1b[90;1m║\x1b[0m ", cell.color, cell.text, border);
                         }
                         2 => {
                             let mut border = "".to_string();
@@ -179,14 +179,14 @@ impl OutputManager {
 
                             print!("{}{}\x1b[0m{} \x1b[90;1m│\x1b[0m ", cell.color, cell.text, border);
                         }
-                        3 => {
+                        1 => {
                             let mut border = "".to_string();
 
                             while (border.len() + (cell.text.len() + 4)) < cell.width {
                                 border = format!("{} ", border);
                             }
 
-                            print!("{}{}\x1b[0m{} \x1b[90;1m║\x1b[0m ", cell.color, cell.text, border);
+                            print!("{}{}\x1b[0m{} \x1b[90;1m│\x1b[0m ", cell.color, cell.text, border);
                         }
                         _ => {}
                     }
@@ -218,7 +218,7 @@ impl OutputManager {
             OutputDisplayType::Guide => {
                 print!(" \x1b[90;1m╟");
                 for index in 0..self.display_width - 2 {
-                    if index == 13 || index == 62 || index == 86 {
+                    if index == 13 || index == 37 || index == 61 {
                         print!("┼");
                     } else {
                         print!("─");
@@ -232,13 +232,13 @@ impl OutputManager {
                 let mut line = "".to_string();
                 let _ = line.clone();
                 line = format!("╚");
-                for _ in 0..((self.display_width - (text.len() + 4)) / 2) - 1 {
+                for _ in 0..((self.display_width - (text.len() + 4)) / 2) - 2 {
                     line = format!("{}═", line);
                 }
 
                 line = format!("{}╡ {} ╞", line, text);
 
-                for _ in 0..((self.display_width - (text.len() + 4)) / 2) - 1 {
+                for _ in 0..((self.display_width - (text.len() + 4)) / 2) {
                     line = format!("{}═", line);
                 }
 
@@ -299,11 +299,6 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: name,
-                    width: 50,
-                    color: "\x1b[36m".to_string(),
-                },
-                DisplayCell {
                     text: filter_wildcards(local).to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
@@ -312,7 +307,12 @@ impl DisplayLine {
                     text: filter_wildcards(remote).to_string(),
                     width: 25,
                     color: "\x1b[32m".to_string(),
-                }
+                },
+                DisplayCell {
+                    text: name,
+                    width: 50,
+                    color: "\x1b[36m".to_string(),
+                },
             ],
         }
     }
@@ -327,11 +327,6 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: format!("{} {}", indenter, name),
-                    width: 50,
-                    color: "\x1b[36m".to_string(),
-                },
-                DisplayCell {
                     text: filter_wildcards(local).to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
@@ -340,7 +335,12 @@ impl DisplayLine {
                     text: filter_wildcards(remote).to_string(),
                     width: 25,
                     color: "\x1b[32m".to_string(),
-                }
+                },
+                DisplayCell {
+                    text: format!("{} {}", indenter, name),
+                    width: 50,
+                    color: "\x1b[36m".to_string(),
+                },
             ],
         }
     }
@@ -355,11 +355,6 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: "Dependency".to_string(),
-                    width: 50,
-                    color: "\x1b[36m".to_string(),
-                },
-                DisplayCell {
                     text: "Version".to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
@@ -368,7 +363,12 @@ impl DisplayLine {
                     text: "Latest".to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
-                }
+                },
+                DisplayCell {
+                    text: "Dependency".to_string(),
+                    width: 50,
+                    color: "\x1b[36m".to_string(),
+                },
             ],
         }
     }
@@ -383,11 +383,6 @@ impl DisplayLine {
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
-                    text: "Total Dependencies".to_string(),
-                    width: 50,
-                    color: "\x1b[36m".to_string(),
-                },
-                DisplayCell {
                     text: "Up To Date".to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
@@ -396,23 +391,23 @@ impl DisplayLine {
                     text: "Out Of Date".to_string(),
                     width: 25,
                     color: "\x1b[36m".to_string(),
+                },
+                DisplayCell {
+                    text: "Total Dependencies".to_string(),
+                    width: 50,
+                    color: "\x1b[36m".to_string(),
                 }
             ],
         }
     }
 
-    pub fn new_footer_content(utd: u16, ood: u16, advisories: u16, warn: u16) -> DisplayLine {
+    pub fn new_footer_content(utd: u32, ood: u32, advisories: u32, warn: u32) -> DisplayLine {
         let mut d = DisplayLine {
             display_type: OutputDisplayType::Entry,
             cells: vec![
                 DisplayCell {
                     text: format!("{}", advisories),
                     width: 11,
-                    color: "\x1b[36m".to_string(),
-                },
-                DisplayCell {
-                    text: format!("{}", utd + ood + warn),
-                    width: 50,
                     color: "\x1b[36m".to_string(),
                 },
                 DisplayCell {
@@ -424,7 +419,12 @@ impl DisplayLine {
                     text: format!("{}", ood),
                     width: 25,
                     color: "\x1b[36m".to_string(),
-                }
+                },
+                DisplayCell {
+                    text: format!("{}", utd + ood + warn),
+                    width: 50,
+                    color: "\x1b[36m".to_string(),
+                },
             ],
         };
 

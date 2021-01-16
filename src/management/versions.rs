@@ -28,8 +28,8 @@ impl VersionManager {
         }
     }
 
-    pub async fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &mut Sender<DisplayLine>, db: &SecurityDatabase, recursion: usize) -> Result<(u16, u16, u16, u16), VerificationError> {
-        let (mut good, mut bad, mut insecure, mut warn) = (0, 0, 0, 0);
+    pub async fn fetch_dependencies<P: AsRef<Path>>(&self, path_to_manifest: P, output: &mut Sender<DisplayLine>, db: &SecurityDatabase, recursion: usize) -> Result<(u32, u32, u32, u32), VerificationError> {
+        let (mut good, mut bad, mut insecure, mut warn): (u32, u32, u32, u32) = (0, 0, 0, 0);
         let handle = OpenOptions::new().write(true).read(true).create(false).open(path_to_manifest.as_ref());
         return if let Ok(mut file) = handle {
             let mut content_string = String::new();
@@ -50,214 +50,25 @@ impl VersionManager {
                 if let Ok(tree) = tree_result {
                     let mut processed: Vec<String> = vec![];
                     let text = String::from_utf8(tree.stdout.to_vec()).unwrap();
-                    let mut index = 0;
+                    let mut index: i32 = 0;
                     for line in text.split("\n") {
                         if !line.contains("feature") && index > 0 {
                             let package = parse_line(self, line, recursion, &processed).await;
                             if recursion == 0 {
                                 if package.level == 2 {
-                                    match package.package.crate_type {
-                                        CrateType::CratesIO => {
-                                            let local = package.package.version.clone().unwrap();
-                                            if local.to_string() != "0.0.0".to_string() {
-                                                let container = package.package;
-                                                let container2 = container.clone();
-                                                let advisories = count_advisories(db, container.name.as_str(), &local);
-                                                processed.push(container.name.clone());
-                                                let mut display = DisplayLine::new_crate(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories);
-
-                                                if container2.is_current_unstable() || container2.is_current() {
-                                                    good += 1;
-                                                    display.cells[1].color = "\x1b[32m".to_string();
-                                                    display.cells[2].color = "\x1b[32m".to_string();
-                                                } else {
-                                                    bad += 1;
-                                                    display.cells[1].color = "\x1b[32m".to_string();
-                                                    display.cells[2].color = "\x1b[32m".to_string();
-                                                }
-
-                                                if advisories > 0 {
-                                                    insecure += 1;
-                                                    display.cells[0].color = "\x1b[31m".to_string();
-                                                    display.cells[1].color = "\x1b[31m".to_string();
-                                                    display.cells[2].color = "\x1b[31m".to_string();
-                                                    if container2.is_current_unstable() || container2.is_current() {
-                                                        display.cells[3].color = "\x1b[31m".to_string();
-                                                    }
-                                                }
-
-                                                output.send(display).await;
-                                            }
-                                        }
-                                        CrateType::Local => {
-                                            let local = package.package.version.clone().unwrap();
-                                            let container = package.package;
-                                            let container2 = container.clone();
-                                            let advisories = count_advisories(db, container.name.as_str(), &local);
-                                            processed.push(container.name.clone());
-                                            let mut display = DisplayLine::new_crate(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories);
-
-                                            if container2.is_current_unstable() || container2.is_current() {
-                                                good += 1;
-                                                display.cells[1].color = "\x1b[32m".to_string();
-                                                display.cells[2].color = "\x1b[32m".to_string();
-                                            } else {
-                                                bad += 1;
-                                                display.cells[1].color = "\x1b[32m".to_string();
-                                                display.cells[2].color = "\x1b[32m".to_string();
-                                            }
-
-                                            if advisories > 0 {
-                                                insecure += 1;
-                                                display.cells[0].color = "\x1b[31m".to_string();
-                                                display.cells[1].color = "\x1b[31m".to_string();
-                                                display.cells[2].color = "\x1b[31m".to_string();
-                                                if container2.is_current_unstable() || container2.is_current() {
-                                                    display.cells[3].color = "\x1b[31m".to_string();
-                                                }
-                                            }
-
-                                            output.send(display).await;
-                                            warn += 1;
-                                        }
-                                        _ => {}
-                                    }
+                                    (good, bad, insecure, warn) = process_dependency(package, output, db, &mut processed, good, bad, insecure, warn, true).await;
                                 }
                             } else if recursion == 1 {
-                                if package.level > 1 && package.level < 4 {
-                                    match package.package.crate_type {
-                                        CrateType::CratesIO => {
-                                            let local = package.package.version.clone().unwrap();
-                                            if local.to_string() != "0.0.0".to_string() {
-                                                let container = package.package;
-                                                let container2 = container.clone();
-                                                let advisories = count_advisories(db, container.name.as_str(), &local);
-                                                processed.push(container.name.clone());
-                                                let mut display = DisplayLine::new_crate(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories);
-
-                                                if container2.is_current_unstable() || container2.is_current() {
-                                                    good += 1;
-                                                    display.cells[1].color = "\x1b[32m".to_string();
-                                                    display.cells[2].color = "\x1b[32m".to_string();
-                                                } else {
-                                                    bad += 1;
-                                                    display.cells[1].color = "\x1b[32m".to_string();
-                                                    display.cells[2].color = "\x1b[32m".to_string();
-                                                }
-
-                                                if advisories > 0 {
-                                                    insecure += 1;
-                                                    display.cells[0].color = "\x1b[31m".to_string();
-                                                    display.cells[1].color = "\x1b[31m".to_string();
-                                                    display.cells[2].color = "\x1b[31m".to_string();
-                                                    if container2.is_current_unstable() || container2.is_current() {
-                                                        display.cells[3].color = "\x1b[31m".to_string();
-                                                    }
-                                                }
-
-                                                output.send(display).await;
-                                            }
-                                        }
-                                        CrateType::Local => {
-                                            let local = package.package.version.clone().unwrap();
-                                            let container = package.package;
-                                            let container2 = container.clone();
-                                            let advisories = count_advisories(db, container.name.as_str(), &local);
-                                            processed.push(container.name.clone());
-                                            let mut display = DisplayLine::new_crate(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories);
-
-                                            if container2.is_current_unstable() || container2.is_current() {
-                                                good += 1;
-                                                display.cells[1].color = "\x1b[32m".to_string();
-                                                display.cells[2].color = "\x1b[32m".to_string();
-                                            } else {
-                                                bad += 1;
-                                                display.cells[1].color = "\x1b[32m".to_string();
-                                                display.cells[2].color = "\x1b[32m".to_string();
-                                            }
-
-                                            if advisories > 0 {
-                                                insecure += 1;
-                                                display.cells[0].color = "\x1b[31m".to_string();
-                                                display.cells[1].color = "\x1b[31m".to_string();
-                                                display.cells[2].color = "\x1b[31m".to_string();
-                                                if container2.is_current_unstable() || container2.is_current() {
-                                                    display.cells[3].color = "\x1b[31m".to_string();
-                                                }
-                                            }
-
-                                            output.send(display).await;
-                                            warn += 1;
-                                        }
-                                        _ => {}
-                                    }
+                                if package.level == 2 {
+                                    (good, bad, insecure, warn) = process_dependency(package, output, db, &mut processed, good, bad, insecure, warn, true).await;
+                                } else if package.level == 3 {
+                                    (good, bad, insecure, warn) = process_dependency(package, output, db, &mut processed, good, bad, insecure, warn, false).await;
                                 }
                             } else {
-                                match package.package.crate_type {
-                                    CrateType::CratesIO => {
-                                        let local = package.package.version.clone().unwrap();
-                                        if local.to_string() != "0.0.0".to_string() {
-                                            let container = package.package;
-                                            let container2 = container.clone();
-                                            let advisories = count_advisories(db, container.name.as_str(), &local);
-                                            processed.push(container.name.clone());
-                                            let mut display = DisplayLine::new_crate(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories);
-
-                                            if container2.is_current_unstable() || container2.is_current() {
-                                                good += 1;
-                                                display.cells[1].color = "\x1b[32m".to_string();
-                                                display.cells[2].color = "\x1b[32m".to_string();
-                                            } else {
-                                                bad += 1;
-                                                display.cells[1].color = "\x1b[32m".to_string();
-                                                display.cells[2].color = "\x1b[32m".to_string();
-                                            }
-
-                                            if advisories > 0 {
-                                                insecure += 1;
-                                                display.cells[0].color = "\x1b[31m".to_string();
-                                                display.cells[1].color = "\x1b[31m".to_string();
-                                                display.cells[2].color = "\x1b[31m".to_string();
-                                                if container2.is_current_unstable() || container2.is_current() {
-                                                    display.cells[3].color = "\x1b[31m".to_string();
-                                                }
-                                            }
-
-                                            output.send(display).await;
-                                        }
-                                    }
-                                    CrateType::Local => {
-                                        let local = package.package.version.clone().unwrap();
-                                        let container = package.package;
-                                        let container2 = container.clone();
-                                        let advisories = count_advisories(db, container.name.as_str(), &local);
-                                        processed.push(container.name.clone());
-                                        let mut display = DisplayLine::new_crate(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories);
-
-                                        if container2.is_current_unstable() || container2.is_current() {
-                                            good += 1;
-                                            display.cells[1].color = "\x1b[32m".to_string();
-                                            display.cells[2].color = "\x1b[32m".to_string();
-                                        } else {
-                                            bad += 1;
-                                            display.cells[1].color = "\x1b[32m".to_string();
-                                            display.cells[2].color = "\x1b[32m".to_string();
-                                        }
-
-                                        if advisories > 0 {
-                                            insecure += 1;
-                                            display.cells[0].color = "\x1b[31m".to_string();
-                                            display.cells[1].color = "\x1b[31m".to_string();
-                                            display.cells[2].color = "\x1b[31m".to_string();
-                                            if container2.is_current_unstable() || container2.is_current() {
-                                                display.cells[3].color = "\x1b[31m".to_string();
-                                            }
-                                        }
-
-                                        output.send(display).await;
-                                        warn += 1;
-                                    }
-                                    _ => {}
+                                if package.level == 2 {
+                                    (good, bad, insecure, warn) = process_dependency(package, output, db, &mut processed, good, bad, insecure, warn, true).await;
+                                } else if package.level > 2 {
+                                    (good, bad, insecure, warn) = process_dependency(package, output, db, &mut processed, good, bad, insecure, warn, false).await;
                                 }
                             }
                         }
@@ -418,78 +229,81 @@ pub async fn parse_line(client: &VersionManager, line: &str, recursion: usize, p
     };
 }
 
-// pub async fn manage_deps(client: &VersionManager, dep: Crate, db: &SecurityDatabase, output: &mut Sender<DisplayLine>, recursion: usize, did_recurse: bool, indenter: &str) -> (u16, u16, u16, u16) {
-//     let (mut good, mut bad, mut insecure, mut warn) = (0, 0, 0, 0);
-//     let count = count_advisories(db, dep.name.as_str(), &dep.version.clone().unwrap());
-//     let mut row = if !did_recurse {
-//         DisplayLine::new_crate(dep.clone(), &count)
-//     } else {
-//         DisplayLine::new_crate_dep(dep.clone(), &count, indenter)
-//     };
-//
-//     // if !dep.version. {
-//     //     warn += 1;
-//     //     row.cells[0].color = "\x1b[33m".to_string();
-//     //     row.cells[1].color = "\x1b[33m".to_string();
-//     //     row.cells[2].color = "\x1b[33m".to_string();
-//     //     row.cells[3].color = "\x1b[33m".to_string();
-//     // }
-//
-//     let up_to_date = dep.is_current() || dep.is_current_unstable();
-//
-//     if !up_to_date {
-//         bad += 1;
-//         row.cells[1].color = "\x1b[33m".to_string();
-//         row.cells[2].color = "\x1b[33m".to_string();
-//         row.cells[3].color = "\x1b[32m".to_string();
-//     } else {
-//         good += 1;
-//         row.cells[2].color = "\x1b[32m".to_string();
-//         row.cells[3].color = "\x1b[32m".to_string();
-//     }
-//
-//     if count > 0 {
-//         insecure += count;
-//         row.cells[0].color = "\x1b[31m".to_string();
-//         row.cells[1].color = "\x1b[31m".to_string();
-//         row.cells[2].color = "\x1b[31m".to_string();
-//
-//         if up_to_date {
-//             row.cells[3].color = "\x1b[31m".to_string();
-//         }
-//     }
-//
-//     if did_recurse && indenter == "┗━" {
-//         output.send(row.clone()).await;
-//         let text = " ".to_string();
-//         row.cells[0].text = text.clone();
-//         row.cells[0].color = "\x1b[36m".to_string();
-//         row.cells[1].text = text.clone();
-//         row.cells[2].text = text.clone();
-//         row.cells[3].text = text;
-//         row.display_type = OutputDisplayType::Entry;
-//     }
-//
-//     output.send(row).await;
-//
-//     // if recursion > 0 {
-//     //     let crate_deps: Result<Vec<crates_io_api::Dependency>, Error> = client.client.crate_dependencies(dep.name.as_str(), dep.version.to_string().as_str());
-//     //
-//     //     if let Ok(dependencies) = crate_deps {
-//     //         for index in 0..dependencies.len() {
-//     //             let dependency = dependencies[index].clone();
-//     //             let (g, b, i, w) = if index == dependencies.len() - 1 {
-//     //                 manage_deps(client, (dependency.crate_id.clone(), cargo_toml::Dependency::Simple(dependency.req)), db, output, 0, true, "┗━")
-//     //             } else {
-//     //                 manage_deps(client, (dependency.crate_id.clone(), cargo_toml::Dependency::Simple(dependency.req)), db, output, 0, true, "┣━")
-//     //             };
-//     //             good += g;
-//     //             bad += b;
-//     //             insecure += i;
-//     //             warn += w;
-//     //         }
-//     //     }
-//     // }
-//
-//     (good, bad, insecure, warn)
-// }
+pub async fn process_dependency(package: Line, output: &mut Sender<DisplayLine>, db: &SecurityDatabase, processed: &mut Vec<String>, mut good: u32, mut bad: u32, mut insecure: u32, mut warn: u32, is_root: bool) -> (u32, u32, u32, u32) {
+    match package.package.crate_type {
+        CrateType::CratesIO => {
+            let local = package.package.version.clone().unwrap();
+            if local.to_string() != "0.0.0".to_string() {
+                let container = package.package;
+                let container2 = container.clone();
+                let advisories = count_advisories(db, container.name.as_str(), &local);
+                processed.push(container.name.clone());
+                let mut display = DisplayLine::new_crate(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories);
+
+                if !is_root {
+                    display.display_type = OutputDisplayType::DepEntry
+                }
+
+                if container2.is_current_unstable() || container2.is_current() {
+                    good += 1;
+                    display.cells[1].color = "\x1b[32m".to_string();
+                    display.cells[2].color = "\x1b[32m".to_string();
+                } else {
+                    bad += 1;
+                    display.cells[1].color = "\x1b[32m".to_string();
+                    display.cells[2].color = "\x1b[32m".to_string();
+                }
+
+                if advisories > 0 {
+                    insecure += 1;
+                    display.cells[0].color = "\x1b[31m".to_string();
+                    display.cells[1].color = "\x1b[31m".to_string();
+                    display.cells[2].color = "\x1b[31m".to_string();
+                    if container2.is_current_unstable() || container2.is_current() {
+                        display.cells[3].color = "\x1b[31m".to_string();
+                    }
+                }
+
+                output.send(display).await;
+            }
+        }
+        CrateType::Local => {
+            let local = package.package.version.clone().unwrap();
+            let container = package.package;
+            let container2 = container.clone();
+            let advisories = count_advisories(db, container.name.as_str(), &local);
+            processed.push(container.name.clone());
+            let mut display = if is_root {
+                DisplayLine::new_crate(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories)
+            } else {
+                DisplayLine::new_crate_dep(container.name, local.to_string(), container.latest_stable.unwrap().to_string(), advisories, "┣━")
+            };
+
+            if container2.is_current_unstable() || container2.is_current() {
+                good += 1;
+                display.cells[1].color = "\x1b[32m".to_string();
+                display.cells[2].color = "\x1b[32m".to_string();
+            } else {
+                bad += 1;
+                display.cells[1].color = "\x1b[32m".to_string();
+                display.cells[2].color = "\x1b[32m".to_string();
+            }
+
+            if advisories > 0 {
+                insecure += 1;
+                display.cells[0].color = "\x1b[31m".to_string();
+                display.cells[1].color = "\x1b[31m".to_string();
+                display.cells[2].color = "\x1b[31m".to_string();
+                if container2.is_current_unstable() || container2.is_current() {
+                    display.cells[3].color = "\x1b[31m".to_string();
+                }
+            }
+
+            output.send(display).await;
+            warn += 1;
+        }
+        _ => {}
+    }
+
+    (good, bad, insecure, warn)
+}

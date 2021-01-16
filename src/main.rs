@@ -1,3 +1,4 @@
+#![feature(destructuring_assignment)]
 use clap::{App, Arg};
 
 mod management;
