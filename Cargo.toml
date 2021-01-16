@@ -1,0 +1,23 @@
+[package]
+name = "version-checker"
+version = "0.1.13"
+authors = ["altrius <tom.b.2k2@gmail.com>"]
+edition = "2018"
+description = "A clean, easy to use version checker built to help you track problems with your dependencies"
+readme = "README.md"
+license = "MIT"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+cargo_toml = "0.8.1"
+semver = "0.11.0"
+regex = "1.4.3"
+serde = "1.0.119"
+serde_derive = "1.0.119"
+serde_json = "1.0.61"
+toml = "0.5.8"
+reqwest = { version = "0.11", features = ["blocking", "json"] }
+zip = "0.5.9"
+clap = "2.33.3"
+tokio = { version = "1.0.2", features = ["fs", "io-util", "io-std", "macros", "rt-multi-thread", "rt", "signal", "sync", "time"] }
