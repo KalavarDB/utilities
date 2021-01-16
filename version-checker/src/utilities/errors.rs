@@ -15,6 +15,15 @@ pub enum Errors {
     /// # Errors for the Cargo.toml file
     // Unable to locate Cargo.toml
     CrateFileNotFound,
+
+    /// # Errors for web access
+    // unable to retreive crate info
+    CrateNotAvailable,
+
+    /// # Errors for parsing
+    // Unable to parse version
+    VersionUnacceptable,
+    CrateParseFailed
 }
 
 pub enum DisplayMode {

@@ -18,7 +18,7 @@ pub struct SecurityDatabase {
 impl SecurityDatabase {
     pub fn new() -> SecurityDatabase {
         SecurityDatabase {
-            client: ClientBuilder::new().user_agent("Kalavar Version Utility v1.0 <Thomas B. | tom.b.2k2@gmail.com>").build().unwrap(),
+            client: ClientBuilder::new().user_agent(format!("Kalavar Version Utility v{} <Thomas B. | tom.b.2k2@gmail.com>", crate::VERSION).as_str()).build().unwrap(),
             advisories: HashMap::new(),
         }
     }

@@ -1,7 +1,7 @@
 use crate::utilities::terminal::output::OutputManager;
 use crate::management::{
     security::SecurityDatabase,
-    crates_io::CratesIOManager,
+    versions::VersionManager,
 };
 
 #[test]
@@ -19,7 +19,7 @@ fn test_db_fetch() {
 
 #[test]
 fn test_manifest_parser() {
-    let mut crate_mgr = CratesIOManager::new();
+    let mut crate_mgr = VersionManager::new();
     crate_mgr.fetch_dependencies("test-manifest.toml");
     for dependency in crate_mgr.dependencies {
         println!("{} - semver: {} - {}", dependency.name, dependency.version.is_semver, dependency.version);

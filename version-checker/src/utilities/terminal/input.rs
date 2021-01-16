@@ -1,26 +1,25 @@
-use std::io::Broad
 
 use crate::utilities::terminal::output::{OutputManager, DisplayLine};
 use crate::management::{
-    crates_io::CratesIOManager,
+    versions::VersionManager,
     security::SecurityDatabase,
 };
 
 pub fn parse_args(manifest: Option<&str>, recursion: usize, updates: bool) {
     let visual_manager: OutputManager = OutputManager::new(0, 112);
-    let crate_mgr = CratesIOManager::new();
+    let version_mgr = VersionManager::new();
 
     if updates {
-        crate_mgr.check_self_update(&visual_manager);
+        version_mgr.check_self_update(&visual_manager);
     }
 
     let mut advisory_db = SecurityDatabase::new();
     let update_result = advisory_db.update();
     if update_result.is_ok() {
         let fetch_result = if let Some(manpath) = manifest {
-            crate_mgr.fetch_dependencies(manpath, &visual_manager, &advisory_db, recursion)
+            version_mgr.fetch_dependencies(manpath, &visual_manager, &advisory_db, recursion)
         } else {
-            crate_mgr.fetch_dependencies("Cargo.toml", &visual_manager, &advisory_db, recursion)
+            version_mgr.fetch_dependencies("Cargo.toml", &visual_manager, &advisory_db, recursion)
         };
         if let Ok((good, bad, insecure, warn)) = fetch_result {
             visual_manager::render(DisplayLine::new_guide());

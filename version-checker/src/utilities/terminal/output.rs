@@ -1,7 +1,7 @@
 use crate::utilities::terminal::output::OutputDisplayMode::{Table, Tree};
 use crate::utilities::errors::VerificationError;
 use std::process::exit;
-use crate::management::crates_io::{Dependency, Version};
+use crate::management::versions::{Dependency, Version};
 use crate::VERSION;
 
 #[derive(Debug, Clone)]

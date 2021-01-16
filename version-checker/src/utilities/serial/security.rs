@@ -11,7 +11,6 @@ pub struct ParentalAdvisory {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Advisory {
-
     pub id: Option<String>,
     pub package: Option<String>,
     pub date: Option<String>,
